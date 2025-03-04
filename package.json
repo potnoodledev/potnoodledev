@@ -1,0 +1,30 @@
+{
+  "name": "evolve-the-game",
+  "version": "1.0.0",
+  "description": "A top-down action survival game where the player needs to survive for 10 minutes against progressively stronger waves of enemies.",
+  "main": "index.js",
+  "scripts": {
+    "start": "webpack serve --open",
+    "build": "webpack --mode production",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "game",
+    "phaser",
+    "survival"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "phaser": "^3.60.0"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^7.1.2",
+    "html-webpack-plugin": "^5.5.3",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  }
+}
