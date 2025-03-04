@@ -1,0 +1,4 @@
+pixellab
+pillow
+python-dotenv
+requests 
