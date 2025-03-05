@@ -18,6 +18,7 @@ A top-down action survival game built with Phaser 3.
 - **Progressive Difficulty**: Enemy waves become stronger over time, with more enemies and increased stats.
 - **Timer**: Survive for 10 minutes to win the game.
 - **Procedurally Generated Assets**: Game assets are generated using AI through the asset_generator module.
+- **AI Agents**: Specialized AI agents can modify the game based on user requests.
 
 ## Project Structure
 
@@ -31,6 +32,10 @@ A top-down action survival game built with Phaser 3.
 - **asset_generator/**: Python-based tool for generating game assets using AI
   - See the [Asset Generator README](asset_generator/README.md) for details
 
+- **game_studio/**: Central command hub for AI agents to modify the game
+  - See the [Game Studio README](game_studio/README.md) for details
+  - See the [AI Agents README](game_studio/README_AGENTS.md) for details on the agent system
+
 ## Development
 
 ### Prerequisites
@@ -38,6 +43,7 @@ A top-down action survival game built with Phaser 3.
 - Node.js (v14 or higher)
 - npm (v6 or higher)
 - Python 3.7+ (for asset generation)
+- Anthropic API key (for AI agents)
 
 ### Installation
 
@@ -59,7 +65,12 @@ A top-down action survival game built with Phaser 3.
    cd ..
    ```
 
-4. Set up environment variables:
+4. For AI agents, install additional Python dependencies:
+   ```bash
+   pip install anthropic requests
+   ```
+
+5. Set up environment variables:
    ```bash
    # Create .env file in the root directory
    echo "PIXELLAB_API_TOKEN=your_pixellab_token_here" > .env
@@ -100,7 +111,29 @@ npm run fetch-comments-advanced
 
 The game includes a powerful asset generation system. All asset generation commands should be run from the project root directory.
 
-#### Quick Reference Commands:
+#### Using the Game Studio (Recommended for AI Agents)
+
+The Game Studio provides a unified interface for all game operations:
+
+```bash
+# Generate player character
+python game_studio/evolve.py generate-character --description "warrior with sword and shield"
+
+# Generate enemy
+python game_studio/evolve.py generate-enemy --type "zombie" --variations 3
+
+# Generate item
+python game_studio/evolve.py generate-item --description "crystal gem with magical glow" --name "crystal"
+
+# Run the game
+python game_studio/evolve.py run
+```
+
+See the [Game Studio README](game_studio/README.md) for complete documentation.
+
+#### Using Asset Generator Directly
+
+You can also use the asset generator scripts directly:
 
 ```bash
 # Generate player character
@@ -123,6 +156,32 @@ node asset_generator/generate_tile_list.js
 ```
 
 For detailed documentation on all asset generation options, see the [Asset Generator README](asset_generator/README.md).
+
+### Using AI Agents
+
+The game includes a powerful AI agent system that can modify the game based on user requests. The system consists of:
+
+1. **Game Developer Agent**: Makes changes to existing game code
+2. **Artist Agent**: Generates game assets using evolve.py commands
+3. **Agent Coordinator**: Orchestrates the work between the two agents
+
+To use the AI agents:
+
+```bash
+# Process a user request
+python game_studio/agent_coordinator.py "I wish there was a flaming axe in the game"
+
+# With explicit API key
+python game_studio/agent_coordinator.py "Add a zombie enemy that moves slowly but is hard to kill" --api-key your_api_key_here
+```
+
+Example requests you can try:
+- "I wish there was a flaming axe in the game"
+- "Add a zombie enemy that moves slowly but is hard to kill"
+- "Create a health potion that restores 50 health points"
+- "Add a desert terrain with cactus obstacles"
+
+For detailed documentation on the AI agent system, see the [AI Agents README](game_studio/README_AGENTS.md).
 
 ### Building for Production
 
@@ -148,7 +207,7 @@ npm run deploy
 - [Webpack](https://webpack.js.org/) - Module bundler
 - [Python](https://www.python.org/) - For asset generation
 - [PixelLab API](https://pixellab.ai/) - AI-powered pixel art generation
-- [Anthropic Claude API](https://www.anthropic.com/) - For terrain generation
+- [Anthropic Claude API](https://www.anthropic.com/) - For terrain generation and AI agents
 
 ## License
 
