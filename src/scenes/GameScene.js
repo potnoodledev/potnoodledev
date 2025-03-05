@@ -9,6 +9,7 @@ export default class GameScene extends Phaser.Scene {
     this.enemies = null;
     this.crystals = null;
     this.rocks = null;
+    this.arrows = null;
     this.joystick = null;
     this.joystickPointer = null;
     this.joystickKeys = null;
@@ -25,6 +26,12 @@ export default class GameScene extends Phaser.Scene {
     this.weaponDamage = 20;
     this.weaponFireRate = 1000; // ms between shots
     this.lastFired = 0;
+    this.currentWeapon = 'rock'; // Default weapon
+    
+    // Bow and Arrow stats
+    this.bowDamage = 35; // More damage than rock
+    this.bowFireRate = 1500; // Slower reload than rock
+    this.bowSpeed = 450; // Faster projectile than rock
     
     // Game settings
     this.gameTime = 0;
@@ -56,6 +63,7 @@ export default class GameScene extends Phaser.Scene {
     this.enemies = this.physics.add.group();
     this.crystals = this.physics.add.group();
     this.rocks = this.physics.add.group();
+    this.arrows = this.physics.add.group();
     
     // Set up collisions
     this.setupCollisions();
@@ -92,6 +100,7 @@ export default class GameScene extends Phaser.Scene {
     this.events.emit('update-player-level', this.playerLevel);
     this.events.emit('update-game-time', this.gameTime, this.gameMaxTime);
     this.events.emit('update-wave', this.waveNumber);
+    this.events.emit('update-weapon', this.currentWeapon);
   }
 
   update(time, delta) {
@@ -182,7 +191,15 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupCollisions() {
-    // Player collects crystals
+    // Player collisions
+    this.physics.add.overlap(
+      this.player,
+      this.enemies,
+      this.enemyHitPlayer,
+      null,
+      this
+    );
+    
     this.physics.add.overlap(
       this.player,
       this.crystals,
@@ -191,7 +208,7 @@ export default class GameScene extends Phaser.Scene {
       this
     );
     
-    // Rocks hit enemies
+    // Weapon collisions
     this.physics.add.overlap(
       this.rocks,
       this.enemies,
@@ -200,11 +217,10 @@ export default class GameScene extends Phaser.Scene {
       this
     );
     
-    // Enemies hit player
     this.physics.add.overlap(
-      this.player,
+      this.arrows,
       this.enemies,
-      this.enemyHitPlayer,
+      this.arrowHitEnemy,
       null,
       this
     );
@@ -256,11 +272,18 @@ export default class GameScene extends Phaser.Scene {
   }
 
   handleWeaponFiring(time) {
-    if (time > this.lastFired + this.weaponFireRate) {
+    // Get the current weapon's fire rate
+    const fireRate = this.currentWeapon === 'bow' ? this.bowFireRate : this.weaponFireRate;
+    
+    if (time > this.lastFired + fireRate) {
       const nearestEnemy = this.findNearestEnemy();
       
       if (nearestEnemy) {
-        this.fireRock(nearestEnemy);
+        if (this.currentWeapon === 'bow') {
+          this.fireArrow(nearestEnemy);
+        } else {
+          this.fireRock(nearestEnemy);
+        }
         this.lastFired = time;
       }
     }
@@ -309,6 +332,33 @@ export default class GameScene extends Phaser.Scene {
     this.time.delayedCall(2000, () => {
       if (rock.active) {
         rock.destroy();
+      }
+    });
+  }
+
+  fireArrow(target) {
+    const arrow = this.arrows.create(this.player.x, this.player.y, 'bow');
+    arrow.setDepth(5);
+    
+    // Calculate direction to target
+    const dx = target.x - this.player.x;
+    const dy = target.y - this.player.y;
+    const angle = Math.atan2(dy, dx);
+    
+    // Set arrow properties
+    arrow.rotation = angle;
+    arrow.damage = this.bowDamage;
+    
+    // Set velocity - faster than rock
+    arrow.setVelocity(
+      Math.cos(angle) * this.bowSpeed,
+      Math.sin(angle) * this.bowSpeed
+    );
+    
+    // Destroy arrow after 2 seconds
+    this.time.delayedCall(2000, () => {
+      if (arrow.active) {
+        arrow.destroy();
       }
     });
   }
@@ -387,7 +437,7 @@ export default class GameScene extends Phaser.Scene {
     crystal.destroy();
     
     // Add XP
-    this.playerXP += 10;
+    this.playerXP += 40;
     
     // Check for level up
     if (this.playerXP >= this.playerMaxXP) {
@@ -413,6 +463,23 @@ export default class GameScene extends Phaser.Scene {
       
       // Destroy enemy
       enemy.destroy();
+    }
+  }
+
+  arrowHitEnemy(arrow, enemy) {
+    // Damage enemy
+    enemy.health -= arrow.damage;
+    
+    // Destroy arrow
+    arrow.destroy();
+    
+    // Check if enemy is dead
+    if (enemy.health <= 0) {
+      // Destroy enemy
+      enemy.destroy();
+      
+      // Spawn crystal
+      this.spawnCrystal(enemy.x, enemy.y);
     }
   }
 
@@ -458,6 +525,16 @@ export default class GameScene extends Phaser.Scene {
     // Increase weapon stats
     this.weaponDamage += 5;
     this.weaponFireRate = Math.max(200, this.weaponFireRate - 100);
+    
+    // Increase bow stats
+    this.bowDamage += 8;
+    this.bowFireRate = Math.max(300, this.bowFireRate - 75);
+    
+    // Unlock bow at level 3
+    if (this.playerLevel === 3 && this.currentWeapon === 'rock') {
+      this.currentWeapon = 'bow';
+      this.events.emit('update-weapon', this.currentWeapon);
+    }
     
     // Increase XP required for next level
     this.playerMaxXP += 50;

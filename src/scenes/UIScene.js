@@ -11,6 +11,7 @@ export default class UIScene extends Phaser.Scene {
     this.levelText = null;
     this.waveText = null;
     this.weaponIcon = null;
+    this.weaponText = null;
   }
 
   create() {
@@ -44,6 +45,7 @@ export default class UIScene extends Phaser.Scene {
     this.gameScene.events.on('update-player-level', this.updateLevelDisplay, this);
     this.gameScene.events.on('update-game-time', this.updateTimer, this);
     this.gameScene.events.on('update-wave', this.updateWaveDisplay, this);
+    this.gameScene.events.on('update-weapon', this.updateWeaponDisplay, this);
   }
 
   createUIContainer() {
@@ -223,5 +225,16 @@ export default class UIScene extends Phaser.Scene {
   updateWaveDisplay(wave) {
     // Update wave text
     this.waveText.setText(`Wave: ${wave}`);
+  }
+
+  updateWeaponDisplay(weapon) {
+    // Update weapon icon and text based on current weapon
+    if (weapon === 'bow') {
+      this.weaponIcon.setTexture('bow');
+      this.weaponText.setText('Bow');
+    } else {
+      this.weaponIcon.setTexture('rock');
+      this.weaponText.setText('Rock');
+    }
   }
 } 
