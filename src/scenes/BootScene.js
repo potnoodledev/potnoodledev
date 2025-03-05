@@ -81,6 +81,9 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('enemy_walk_3', 'assets/images/enemies/walk/frame_3.png');
     this.load.image('enemy_walk_4', 'assets/images/enemies/walk/frame_4.png');
     
+    // Load terrain tiles
+    this.loadTerrainTiles();
+    
     // Dynamically load weapons
     this.loadWeapons();
     
@@ -158,6 +161,22 @@ export default class BootScene extends Phaser.Scene {
       
       // Add to loaded items list
       this.loadedAssets.items.push(key);
+    });
+  }
+  
+  loadTerrainTiles() {
+    // Define the terrain types
+    const terrainTypes = ['grass', 'desert', 'snow', 'water', 'lava', 'stone', 'dirt'];
+    
+    terrainTypes.forEach(terrain => {
+      // For each terrain type, load 3 variations
+      for (let i = 1; i <= 3; i++) {
+        const key = `${terrain}_${i}`;
+        const path = `assets/images/tiles/${terrain}/${terrain}_${i}.png`;
+        
+        // Load the tile image
+        this.load.image(key, path);
+      }
     });
   }
 } 

@@ -169,23 +169,90 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createBackground() {
-    // Create a simple grid background
-    const graphics = this.add.graphics();
-    graphics.lineStyle(1, 0x333333, 0.8);
+    // Create a tiled background using the generated terrain tiles
     
-    // Draw vertical lines
-    for (let x = 0; x <= this.mapWidth; x += 64) {
-      graphics.moveTo(x, 0);
-      graphics.lineTo(x, this.mapHeight);
+    // Create a group for the background tiles
+    this.backgroundTiles = this.add.group();
+    
+    // Tile size (assuming 32x32 pixels)
+    const tileSize = 32;
+    
+    // Calculate number of tiles needed
+    const tilesX = Math.ceil(this.mapWidth / tileSize);
+    const tilesY = Math.ceil(this.mapHeight / tileSize);
+    
+    // Create a 2D array to represent the terrain map
+    this.terrainMap = this.createTerrainMap(tilesX, tilesY);
+    
+    // Place tiles based on the terrain map
+    for (let y = 0; y < tilesY; y++) {
+      for (let x = 0; x < tilesX; x++) {
+        const terrainType = this.terrainMap[y][x];
+        
+        // Randomly select a variation (1-3) of this terrain type
+        const variation = Math.floor(Math.random() * 3) + 1;
+        const tileKey = `${terrainType}_${variation}`;
+        
+        // Create the tile sprite
+        const tile = this.add.sprite(
+          x * tileSize + tileSize / 2,
+          y * tileSize + tileSize / 2,
+          tileKey
+        );
+        
+        // Add to the background group
+        this.backgroundTiles.add(tile);
+      }
     }
+  }
+  
+  createTerrainMap(width, height) {
+    // Create a 2D array filled with the default terrain (grass)
+    const map = Array(height).fill().map(() => Array(width).fill('grass'));
     
-    // Draw horizontal lines
-    for (let y = 0; y <= this.mapHeight; y += 64) {
-      graphics.moveTo(0, y);
-      graphics.lineTo(this.mapWidth, y);
+    // Add some terrain variety
+    // This is a simple implementation - could be expanded with more complex terrain generation
+    
+    // Add a desert area
+    this.addTerrainArea(map, 'desert', 0.2, 0.2, 0.3, 0.3);
+    
+    // Add a water area (like a lake or river)
+    this.addTerrainArea(map, 'water', 0.6, 0.4, 0.2, 0.4);
+    
+    // Add some stone patches
+    this.addTerrainArea(map, 'stone', 0.1, 0.7, 0.15, 0.15);
+    this.addTerrainArea(map, 'stone', 0.8, 0.1, 0.1, 0.1);
+    
+    return map;
+  }
+  
+  addTerrainArea(map, terrainType, centerX, centerY, sizeX, sizeY) {
+    // Convert relative positions to actual indices
+    const centerXIdx = Math.floor(centerX * map[0].length);
+    const centerYIdx = Math.floor(centerY * map.length);
+    const sizeXTiles = Math.floor(sizeX * map[0].length);
+    const sizeYTiles = Math.floor(sizeY * map.length);
+    
+    // Calculate area boundaries
+    const startX = Math.max(0, centerXIdx - Math.floor(sizeXTiles / 2));
+    const endX = Math.min(map[0].length - 1, centerXIdx + Math.floor(sizeXTiles / 2));
+    const startY = Math.max(0, centerYIdx - Math.floor(sizeYTiles / 2));
+    const endY = Math.min(map.length - 1, centerYIdx + Math.floor(sizeYTiles / 2));
+    
+    // Fill the area with the specified terrain type
+    for (let y = startY; y <= endY; y++) {
+      for (let x = startX; x <= endX; x++) {
+        // Add some randomness to the edges for a more natural look
+        const distFromCenterX = Math.abs(x - centerXIdx) / (sizeXTiles / 2);
+        const distFromCenterY = Math.abs(y - centerYIdx) / (sizeYTiles / 2);
+        const distFromCenter = Math.sqrt(distFromCenterX * distFromCenterX + distFromCenterY * distFromCenterY);
+        
+        // Apply terrain with higher probability near the center
+        if (Math.random() > distFromCenter * 0.8) {
+          map[y][x] = terrainType;
+        }
+      }
     }
-    
-    graphics.strokePath();
   }
 
   createPlayer() {
