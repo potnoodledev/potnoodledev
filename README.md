@@ -17,6 +17,19 @@ A top-down action survival game built with Phaser 3.
 - **Leveling System**: Collect crystals from defeated enemies to gain XP and level up.
 - **Progressive Difficulty**: Enemy waves become stronger over time, with more enemies and increased stats.
 - **Timer**: Survive for 10 minutes to win the game.
+- **Procedurally Generated Assets**: Game assets are generated using AI through the asset_generator module.
+
+## Project Structure
+
+- **src/**: Main game source code
+  - **assets/**: Game assets (images, audio, etc.)
+  - **scenes/**: Phaser scenes (Boot, Game, UI, GameOver)
+  - **scripts/**: Utility scripts for fetching comments and other tasks
+  - **index.js**: Main game initialization
+  - **index.html**: HTML entry point
+
+- **asset_generator/**: Python-based tool for generating game assets using AI
+  - See the [Asset Generator README](asset_generator/README.md) for details
 
 ## Development
 
@@ -24,35 +37,118 @@ A top-down action survival game built with Phaser 3.
 
 - Node.js (v14 or higher)
 - npm (v6 or higher)
+- Python 3.7+ (for asset generation)
 
 ### Installation
 
 1. Clone the repository
-2. Install dependencies:
+   ```bash
+   git clone https://github.com/yourusername/evolve-the-game.git
+   cd evolve-the-game
    ```
+
+2. Install dependencies:
+   ```bash
    npm install
    ```
-3. Start the development server:
+
+3. For asset generation, install Python dependencies:
+   ```bash
+   cd asset_generator
+   pip install -r requirements.txt
+   cd ..
    ```
-   npm start
+
+4. Set up environment variables:
+   ```bash
+   # Create .env file in the root directory
+   echo "PIXELLAB_API_TOKEN=your_pixellab_token_here" > .env
+   echo "ANTHROPIC_API_KEY=your_anthropic_key_here" >> .env
    ```
-4. Open your browser and navigate to `http://localhost:8080`
+
+### Running the Game
+
+Start the development server:
+```bash
+npm start
+```
+
+Open your browser and navigate to `http://localhost:8080`
+
+### Available NPM Scripts
+
+The following npm scripts are available for development and deployment:
+
+```bash
+# Start development server
+npm start
+
+# Build for production
+npm run build
+
+# Deploy to itch.io (requires Butler)
+npm run deploy
+
+# Fetch comments from itch.io
+npm run fetch-comments
+
+# Fetch comments with advanced options
+npm run fetch-comments-advanced
+```
+
+### Generating Assets
+
+The game includes a powerful asset generation system. All asset generation commands should be run from the project root directory.
+
+#### Quick Reference Commands:
+
+```bash
+# Generate player character
+python asset_generator/generate_character.py --description "warrior with sword and shield"
+
+# Generate enemy
+python asset_generator/generate_enemy.py --type "zombie" --variations 3
+
+# Generate item
+python asset_generator/generate_item.py --description "crystal gem with magical glow" --name "crystal"
+
+# Generate weapon with projectile
+python asset_generator/generate_weapon_with_projectile.py --weapon "throwing axe" --projectile "axe" --weapon-name "axe"
+
+# Generate terrain tiles
+python asset_generator/generate_tiles.py --terrain "grass" --output-dir "src/assets/images/tiles"
+
+# Generate tile list JavaScript file
+node asset_generator/generate_tile_list.js
+```
+
+For detailed documentation on all asset generation options, see the [Asset Generator README](asset_generator/README.md).
 
 ### Building for Production
 
 To build the game for production:
 
-```
+```bash
 npm run build
 ```
 
 The built files will be in the `dist` directory.
 
+### Deployment
+
+To deploy the game to itch.io (requires Butler):
+
+```bash
+npm run deploy
+```
+
 ## Technologies Used
 
 - [Phaser 3](https://phaser.io/phaser3) - HTML5 game framework
 - [Webpack](https://webpack.js.org/) - Module bundler
-- JavaScript (ES6+)
+- [Python](https://www.python.org/) - For asset generation
+- [PixelLab API](https://pixellab.ai/) - AI-powered pixel art generation
+- [Anthropic Claude API](https://www.anthropic.com/) - For terrain generation
 
 ## License
 
