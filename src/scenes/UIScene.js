@@ -12,6 +12,17 @@ export default class UIScene extends Phaser.Scene {
     this.waveText = null;
     this.weaponIcon = null;
     this.weaponText = null;
+    
+    // UI style constants
+    this.styles = {
+      boxFill: 0x000000,
+      boxOutlineWidth: 2,
+      boxOutlineColor: 0xffffff,
+      textSize: '12px',
+      textColor: '#ffffff',
+      headerTextSize: '14px',
+      headerTextColor: '#ffffff'
+    };
   }
 
   create() {
@@ -55,119 +66,125 @@ export default class UIScene extends Phaser.Scene {
     this.uiContainer.setScrollFactor(0);
   }
 
+  // Helper method to create a styled box with outline
+  createStyledBox(x, y, width, height, originX = 0, originY = 0) {
+    // Create pure black box background with higher alpha
+    const box = this.add.rectangle(x, y, width, height, 0x000000, 1);
+    box.setOrigin(originX, originY);
+    
+    // Create white outline
+    const outline = this.add.rectangle(x, y, width + this.styles.boxOutlineWidth, height + this.styles.boxOutlineWidth, this.styles.boxOutlineColor, 1);
+    outline.setOrigin(originX, originY);
+    outline.setStrokeStyle(this.styles.boxOutlineWidth, this.styles.boxOutlineColor);
+    
+    // Add both to UI container
+    this.uiContainer.add(outline);
+    this.uiContainer.add(box);
+    
+    return box;
+  }
+
   createHealthBar() {
-    // Create health bar background
-    const healthBarBg = this.add.rectangle(20, 20, 200, 20, 0x000000, 0.7);
-    healthBarBg.setOrigin(0, 0);
+    // Create health bar container with outline - pure black
+    const healthBarBox = this.createStyledBox(20, 20, 200, 30);
     
     // Create health bar fill
-    this.healthBar = this.add.rectangle(22, 22, 196, 16, 0xff0000, 1);
+    this.healthBar = this.add.rectangle(24, 24, 192, 22, 0xff0000, 1);
     this.healthBar.setOrigin(0, 0);
     
     // Create health text
-    this.healthText = this.add.text(120, 20, 'Health', {
-      font: '14px Arial',
-      fill: '#ffffff'
+    this.healthText = this.add.text(120, 35, 'Health', {
+      font: this.styles.textSize + ' Arial',
+      fill: this.styles.textColor
     });
-    this.healthText.setOrigin(0.5, 0);
+    this.healthText.setOrigin(0.5, 0.5);
     
     // Add to UI container
-    this.uiContainer.add(healthBarBg);
     this.uiContainer.add(this.healthBar);
     this.uiContainer.add(this.healthText);
   }
 
   createXPBar() {
-    // Create XP bar background
-    const xpBarBg = this.add.rectangle(20, 50, 200, 20, 0x000000, 0.7);
-    xpBarBg.setOrigin(0, 0);
+    // Create XP bar container with outline - pure black
+    const xpBarBox = this.createStyledBox(20, 60, 200, 30);
     
     // Create XP bar fill
-    this.xpBar = this.add.rectangle(22, 52, 196, 16, 0x9b59b6, 1);
+    this.xpBar = this.add.rectangle(24, 64, 192, 22, 0x9b59b6, 1);
     this.xpBar.setOrigin(0, 0);
     
     // Create XP text
-    this.xpText = this.add.text(120, 50, 'XP', {
-      font: '14px Arial',
-      fill: '#ffffff'
+    this.xpText = this.add.text(120, 75, 'XP', {
+      font: this.styles.textSize + ' Arial',
+      fill: this.styles.textColor
     });
-    this.xpText.setOrigin(0.5, 0);
+    this.xpText.setOrigin(0.5, 0.5);
     
     // Add to UI container
-    this.uiContainer.add(xpBarBg);
     this.uiContainer.add(this.xpBar);
     this.uiContainer.add(this.xpText);
   }
 
   createTimer() {
-    // Create timer background
-    const timerBg = this.add.rectangle(this.cameras.main.width / 2, 20, 150, 30, 0x000000, 0.7);
-    timerBg.setOrigin(0.5, 0);
+    // Create timer container with outline - pure black
+    const timerBox = this.createStyledBox(this.cameras.main.width / 2, 20, 150, 30, 0.5, 0);
     
     // Create timer text
     this.timerText = this.add.text(this.cameras.main.width / 2, 35, '00:00', {
-      font: '18px Arial',
-      fill: '#ffffff'
+      font: this.styles.headerTextSize + ' Arial',
+      fill: this.styles.headerTextColor
     });
     this.timerText.setOrigin(0.5, 0.5);
     
     // Add to UI container
-    this.uiContainer.add(timerBg);
     this.uiContainer.add(this.timerText);
   }
 
   createLevelDisplay() {
-    // Create level background
-    const levelBg = this.add.rectangle(this.cameras.main.width - 20, 20, 100, 30, 0x000000, 0.7);
-    levelBg.setOrigin(1, 0);
+    // Create level container with outline - pure black
+    const levelBox = this.createStyledBox(this.cameras.main.width - 20, 20, 100, 30, 1, 0);
     
     // Create level text
     this.levelText = this.add.text(this.cameras.main.width - 70, 35, 'Level: 1', {
-      font: '16px Arial',
-      fill: '#ffffff'
+      font: this.styles.textSize + ' Arial',
+      fill: this.styles.textColor
     });
     this.levelText.setOrigin(0.5, 0.5);
     
     // Add to UI container
-    this.uiContainer.add(levelBg);
     this.uiContainer.add(this.levelText);
   }
 
   createWaveDisplay() {
-    // Create wave background
-    const waveBg = this.add.rectangle(this.cameras.main.width - 20, 60, 100, 30, 0x000000, 0.7);
-    waveBg.setOrigin(1, 0);
+    // Create wave container with outline - pure black
+    const waveBox = this.createStyledBox(this.cameras.main.width - 20, 60, 100, 30, 1, 0);
     
     // Create wave text
     this.waveText = this.add.text(this.cameras.main.width - 70, 75, 'Wave: 1', {
-      font: '16px Arial',
-      fill: '#ffffff'
+      font: this.styles.textSize + ' Arial',
+      fill: this.styles.textColor
     });
     this.waveText.setOrigin(0.5, 0.5);
     
     // Add to UI container
-    this.uiContainer.add(waveBg);
     this.uiContainer.add(this.waveText);
   }
 
   createWeaponDisplay() {
-    // Create weapon background
-    const weaponBg = this.add.rectangle(20, this.cameras.main.height - 20, 80, 80, 0x000000, 0.7);
-    weaponBg.setOrigin(0, 1);
+    // Create weapon container with outline - pure black
+    const weaponBox = this.createStyledBox(20, this.cameras.main.height - 20, 80, 80, 0, 1);
     
     // Create weapon icon
     this.weaponIcon = this.add.image(60, this.cameras.main.height - 60, 'rock');
-    this.weaponIcon.setScale(2);
+    this.weaponIcon.setScale(1.8);
     
     // Create weapon text
     this.weaponText = this.add.text(60, this.cameras.main.height - 25, 'Rock', {
-      font: '14px Arial',
-      fill: '#ffffff'
+      font: this.styles.textSize + ' Arial',
+      fill: this.styles.textColor
     });
     this.weaponText.setOrigin(0.5, 0.5);
     
     // Add to UI container
-    this.uiContainer.add(weaponBg);
     this.uiContainer.add(this.weaponIcon);
     this.uiContainer.add(this.weaponText);
   }
@@ -175,19 +192,19 @@ export default class UIScene extends Phaser.Scene {
   updateHealthBar(currentHealth, maxHealth) {
     // Update health bar width
     const healthPercent = Math.max(0, currentHealth / maxHealth);
-    this.healthBar.width = 196 * healthPercent;
+    this.healthBar.width = 192 * healthPercent;
     
     // Update health text
-    this.healthText.setText(`Health: ${currentHealth}/${maxHealth}`);
+    this.healthText.setText(`${currentHealth}/${maxHealth}`);
   }
 
   updateXPBar(currentXP, maxXP) {
     // Update XP bar width
     const xpPercent = currentXP / maxXP;
-    this.xpBar.width = 196 * xpPercent;
+    this.xpBar.width = 192 * xpPercent;
     
     // Update XP text
-    this.xpText.setText(`XP: ${currentXP}/${maxXP}`);
+    this.xpText.setText(`${currentXP}/${maxXP}`);
   }
 
   updateLevelDisplay(level) {
@@ -212,7 +229,7 @@ export default class UIScene extends Phaser.Scene {
     
     // Change color based on remaining time
     if (timePercent > 0.75) {
-      this.timerText.setColor('#ffffff');
+      this.timerText.setColor(this.styles.headerTextColor);
     } else if (timePercent > 0.5) {
       this.timerText.setColor('#ffff00');
     } else if (timePercent > 0.25) {
@@ -248,8 +265,8 @@ export default class UIScene extends Phaser.Scene {
       console.log(`Weapon stats: ${stats.join(', ')}`);
     } else {
       // Fallback if weapon config not found
-      this.weaponIcon.setTexture(weapon);
-      this.weaponText.setText(weapon.charAt(0).toUpperCase() + weapon.slice(1));
+      this.weaponIcon.setTexture('rock');
+      this.weaponText.setText('Rock');
     }
   }
 } 
