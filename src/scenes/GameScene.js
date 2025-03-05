@@ -90,6 +90,25 @@ export default class GameScene extends Phaser.Scene {
     if (data && data.loadedAssets) {
       this.configureWeapons(data.loadedAssets);
     }
+    
+    // Store available terrain types
+    this.availableTerrainTypes = data && data.tileTypes ? data.tileTypes : [];
+    console.log('Available terrain types in GameScene:', this.availableTerrainTypes);
+    
+    // Debug: Check if textures exist for each terrain type
+    if (this.availableTerrainTypes && this.availableTerrainTypes.length > 0) {
+      this.availableTerrainTypes.forEach(terrainType => {
+        for (let i = 1; i <= 3; i++) {
+          const tileKey = `${terrainType}_${i}`;
+          console.log(`Checking if texture exists for ${tileKey}:`, this.textures ? this.textures.exists(tileKey) : 'textures not available yet');
+        }
+        // Also check pattern tile
+        const patternKey = `${terrainType}_pattern`;
+        console.log(`Checking if texture exists for ${patternKey}:`, this.textures ? this.textures.exists(patternKey) : 'textures not available yet');
+      });
+    } else {
+      console.warn('No terrain types available in GameScene init');
+    }
   }
 
   create() {
@@ -170,6 +189,7 @@ export default class GameScene extends Phaser.Scene {
 
   createBackground() {
     // Create a tiled background using the generated terrain tiles
+    console.log('Creating background with terrain types:', this.availableTerrainTypes);
     
     // Create a group for the background tiles
     this.backgroundTiles = this.add.group();
@@ -181,17 +201,93 @@ export default class GameScene extends Phaser.Scene {
     const tilesX = Math.ceil(this.mapWidth / tileSize);
     const tilesY = Math.ceil(this.mapHeight / tileSize);
     
+    // Verify that textures exist for the available terrain types
+    let validTerrainTypes = [];
+    if (this.availableTerrainTypes && this.availableTerrainTypes.length > 0) {
+      this.availableTerrainTypes.forEach(terrainType => {
+        // Check if at least one texture exists for this terrain type
+        let hasTexture = false;
+        for (let i = 1; i <= 3; i++) {
+          if (this.textures.exists(`${terrainType}_${i}`)) {
+            hasTexture = true;
+            break;
+          }
+        }
+        if (hasTexture) {
+          validTerrainTypes.push(terrainType);
+        } else {
+          console.warn(`No textures found for terrain type: ${terrainType}`);
+        }
+      });
+    }
+    
+    // If no valid terrain types are available, create a grid background
+    if (validTerrainTypes.length === 0) {
+      console.warn('No valid terrain types available, creating grid background');
+      this.createGridBackground(tilesX, tilesY, tileSize);
+      return;
+    }
+    
+    // Update available terrain types to only include valid ones
+    this.availableTerrainTypes = validTerrainTypes;
+    console.log('Valid terrain types:', this.availableTerrainTypes);
+    
     // Create a 2D array to represent the terrain map
     this.terrainMap = this.createTerrainMap(tilesX, tilesY);
+    
+    // If no terrain map is available, create a simple grid background
+    if (!this.terrainMap) {
+      console.log('No terrain map available, creating grid background');
+      this.createGridBackground(tilesX, tilesY, tileSize);
+      return;
+    }
+    
+    console.log('Created terrain map with dimensions:', tilesX, 'x', tilesY);
+    console.log('Sample terrain types in map:', 
+      this.terrainMap[0][0], 
+      this.terrainMap[Math.floor(tilesY/2)][Math.floor(tilesX/2)],
+      this.terrainMap[tilesY-1][tilesX-1]
+    );
     
     // Place tiles based on the terrain map
     for (let y = 0; y < tilesY; y++) {
       for (let x = 0; x < tilesX; x++) {
         const terrainType = this.terrainMap[y][x];
         
-        // Randomly select a variation (1-3) of this terrain type
-        const variation = Math.floor(Math.random() * 3) + 1;
-        const tileKey = `${terrainType}_${variation}`;
+        // Decide whether to use a pattern tile (10% chance)
+        const usePattern = Math.random() < 0.1;
+        
+        let tileKey;
+        let textureExists = false;
+        
+        // Try to use pattern tile first if requested
+        if (usePattern) {
+          tileKey = `${terrainType}_pattern`;
+          textureExists = this.textures.exists(tileKey);
+        }
+        
+        // If pattern tile doesn't exist or wasn't requested, try numbered variations
+        if (!textureExists) {
+          // Try each variation in order
+          for (let i = 1; i <= 3; i++) {
+            tileKey = `${terrainType}_${i}`;
+            if (this.textures.exists(tileKey)) {
+              textureExists = true;
+              break;
+            }
+          }
+          
+          // If no variations exist, use a fallback
+          if (!textureExists) {
+            console.warn(`No textures found for ${terrainType}, skipping tile at ${x},${y}`);
+            continue;
+          }
+        }
+        
+        // Debug log for the first few tiles
+        if (y < 2 && x < 2) {
+          console.log(`Tile at ${x},${y}: terrain=${terrainType}, key=${tileKey}, exists=${textureExists}`);
+        }
         
         // Create the tile sprite
         const tile = this.add.sprite(
@@ -206,22 +302,80 @@ export default class GameScene extends Phaser.Scene {
     }
   }
   
+  // Create a simple grid background when no terrain tiles are available
+  createGridBackground(tilesX, tilesY, tileSize) {
+    // Create a graphics object for drawing the grid
+    const graphics = this.add.graphics();
+    
+    // Set line style for the grid
+    graphics.lineStyle(1, 0x00ff00, 0.3); // Thin green lines with 30% opacity
+    
+    // Draw vertical lines
+    for (let x = 0; x <= tilesX; x++) {
+      graphics.moveTo(x * tileSize, 0);
+      graphics.lineTo(x * tileSize, tilesY * tileSize);
+    }
+    
+    // Draw horizontal lines
+    for (let y = 0; y <= tilesY; y++) {
+      graphics.moveTo(0, y * tileSize);
+      graphics.lineTo(tilesX * tileSize, y * tileSize);
+    }
+    
+    // Draw diagonal lines for a more interesting grid
+    for (let x = 0; x < tilesX; x++) {
+      for (let y = 0; y < tilesY; y++) {
+        graphics.moveTo(x * tileSize, y * tileSize);
+        graphics.lineTo((x + 1) * tileSize, (y + 1) * tileSize);
+      }
+    }
+    
+    // Stroke the graphics to render the lines
+    graphics.strokePath();
+  }
+  
   createTerrainMap(width, height) {
-    // Create a 2D array filled with the default terrain (grass)
-    const map = Array(height).fill().map(() => Array(width).fill('grass'));
+    console.log('Creating terrain map with available types:', this.availableTerrainTypes);
     
-    // Add some terrain variety
-    // This is a simple implementation - could be expanded with more complex terrain generation
+    // Check if we have any terrain types available
+    if (!this.availableTerrainTypes || this.availableTerrainTypes.length === 0) {
+      console.warn('No terrain types available, using fallback grid');
+      // Return a null map to indicate we should use a fallback grid
+      return null;
+    }
     
-    // Add a desert area
-    this.addTerrainArea(map, 'desert', 0.2, 0.2, 0.3, 0.3);
+    // Create a 2D array filled with the default terrain (first available type)
+    const defaultTerrain = this.availableTerrainTypes[0];
+    console.log('Using default terrain:', defaultTerrain);
     
-    // Add a water area (like a lake or river)
-    this.addTerrainArea(map, 'water', 0.6, 0.4, 0.2, 0.4);
+    const map = Array(height).fill().map(() => Array(width).fill(defaultTerrain));
     
-    // Add some stone patches
-    this.addTerrainArea(map, 'stone', 0.1, 0.7, 0.15, 0.15);
-    this.addTerrainArea(map, 'stone', 0.8, 0.1, 0.1, 0.1);
+    // If we only have one terrain type, just return a uniform map
+    if (this.availableTerrainTypes.length <= 1) {
+      return map;
+    }
+    
+    // Add 2-4 random terrain areas
+    const numAreas = 2 + Math.floor(Math.random() * 3);
+    
+    for (let i = 0; i < numAreas; i++) {
+      // Skip the default terrain since it's already the base
+      const availableForArea = this.availableTerrainTypes.filter(t => t !== defaultTerrain);
+      
+      if (availableForArea.length === 0) continue;
+      
+      // Pick a random terrain type
+      const terrainType = availableForArea[Math.floor(Math.random() * availableForArea.length)];
+      
+      // Random position and size
+      const centerX = 0.1 + Math.random() * 0.8; // Keep away from edges
+      const centerY = 0.1 + Math.random() * 0.8;
+      const sizeX = 0.1 + Math.random() * 0.3;
+      const sizeY = 0.1 + Math.random() * 0.3;
+      
+      // Add the terrain area
+      this.addTerrainArea(map, terrainType, centerX, centerY, sizeX, sizeY);
+    }
     
     return map;
   }
