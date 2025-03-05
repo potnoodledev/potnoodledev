@@ -51,7 +51,7 @@ def save_base64_image(base64_data, output_path=None):
 def generate_pixel_art(description, width=128, height=128, output_path=None, 
                        negative_description=None, outline=None, shading=None, 
                        detail=None, view=None, direction=None, isometric=False, 
-                       no_background=False, seed=None, api_token=None,
+                       no_background=True, seed=None, api_token=None,
                        text_guidance_scale=None, init_image=None, init_image_strength=None,
                        color_image=None):
     """
@@ -69,7 +69,7 @@ def generate_pixel_art(description, width=128, height=128, output_path=None,
         view (str, optional): View perspective for the pixel art. One of: "side", "low top-down", "high top-down".
         direction (str, optional): Direction for the pixel art. One of: "north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west".
         isometric (bool, optional): Generate in isometric view. Defaults to False.
-        no_background (bool, optional): Generate with transparent background. Defaults to False.
+        no_background (bool, optional): Generate with transparent background. Defaults to True.
         seed (int, optional): Seed for the generation process.
         api_token (str, optional): PixelLab API token. If None, it will be read from the PIXELLAB_API_TOKEN environment variable.
         text_guidance_scale (int, optional): How closely to follow the text description (1-20). Higher values follow the description more closely.
@@ -472,7 +472,7 @@ def generate_item_set(item_type, variations=["standard", "rare", "epic"], output
     
     return assets
 
-def generate_item(item_description, output_dir="src/assets/images/items", output_filename=None, seed=None, api_token=None):
+def generate_item(item_description, output_dir="src/assets/images/items", output_filename=None, seed=None, api_token=None, no_background=True):
     """
     Generate a single item asset.
     
@@ -482,6 +482,7 @@ def generate_item(item_description, output_dir="src/assets/images/items", output
         output_filename (str, optional): Filename to use for the item. If None, a filename will be generated from the item description.
         seed (int, optional): Seed for the generation process. If None, a random seed will be used.
         api_token (str, optional): PixelLab API token. If None, it will be read from the PIXELLAB_API_TOKEN environment variable.
+        no_background (bool, optional): Generate with transparent background. Defaults to True.
         
     Returns:
         str: File path to the generated item asset.
@@ -508,7 +509,7 @@ def generate_item(item_description, output_dir="src/assets/images/items", output
         output_path=item_path,
         seed=seed,
         api_token=api_token,
-        no_background=True,  # Explicitly ensure transparent background
+        no_background=no_background,  # Use the provided no_background parameter
         width=32,
         height=32
     )
@@ -1034,7 +1035,7 @@ def main():
             view=args.view if hasattr(args, 'view') else None,
             direction=args.direction if hasattr(args, 'direction') else None,
             isometric=args.isometric if hasattr(args, 'isometric') else False,
-            no_background=args.no_background if hasattr(args, 'no_background') else False,
+            no_background=args.no_background if hasattr(args, 'no_background') else True,
             seed=args.seed if hasattr(args, 'seed') else None,
             api_token=args.token if hasattr(args, 'token') else None,
             text_guidance_scale=args.guidance_scale if hasattr(args, 'guidance_scale') else None
@@ -1133,7 +1134,8 @@ def main():
             output_dir=args.output_dir,
             output_filename=args.output_filename,
             seed=args.seed,
-            api_token=args.token
+            api_token=args.token,
+            no_background=True
         )
         print(f"Generated item asset: {item_path}")
 

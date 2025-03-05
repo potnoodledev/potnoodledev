@@ -18,6 +18,8 @@ def main():
     parser.add_argument("--name", "-n", required=True, help="Name of the item (used for filename)")
     parser.add_argument("--seed", type=int, help="Seed for the generation process")
     parser.add_argument("--token", help="PixelLab API token (overrides environment variable)")
+    parser.add_argument("--with-background", action="store_false", dest="no_background", 
+                        help="Generate with a background (by default, items have transparent backgrounds)")
     
     args = parser.parse_args()
     
@@ -34,6 +36,7 @@ def main():
     print(f"Project root: {project_root}")
     print(f"Items directory: {items_dir}")
     print(f"Generating item: {args.description}")
+    print(f"Transparent background: {args.no_background}")
     
     # Generate the item
     item_path = generate_item(
@@ -41,7 +44,8 @@ def main():
         output_dir=items_dir,
         output_filename=f"{args.name}.png",
         seed=args.seed,
-        api_token=api_token
+        api_token=api_token,
+        no_background=args.no_background
     )
     
     print(f"Item generated: {item_path}")
