@@ -8,8 +8,7 @@ export default class GameScene extends Phaser.Scene {
     this.player = null;
     this.enemies = null;
     this.crystals = null;
-    this.rocks = null;
-    this.arrows = null;
+    this.projectiles = null;
     this.joystick = null;
     this.joystickPointer = null;
     this.joystickKeys = null;
@@ -22,16 +21,44 @@ export default class GameScene extends Phaser.Scene {
     this.playerHealth = 100;
     this.playerMaxHealth = 100;
     
-    // Weapon stats
-    this.weaponDamage = 20;
-    this.weaponFireRate = 1000; // ms between shots
-    this.lastFired = 0;
-    this.currentWeapon = 'rock'; // Default weapon
+    // Weapons configuration
+    this.weapons = {
+      'rock': {
+        name: 'Rock',
+        damage: 20,
+        fireRate: 1000, // ms between shots
+        projectileSpeed: 300,
+        projectileKey: 'rock', // The image key for the projectile
+        projectileScale: 1,
+        effectScale: 0,  // No effect for rock
+        effectDuration: 0
+      },
+      'bow': {
+        name: 'Bow',
+        damage: 35,
+        fireRate: 1500, // ms between shots
+        projectileSpeed: 450,
+        projectileKey: 'arrow', // The image key for the projectile
+        projectileScale: 1,
+        effectScale: 0.8, // Show the bow when firing
+        effectDuration: 300
+      },
+      'axe': {
+        name: 'Throwing Axe',
+        damage: 45,
+        fireRate: 2000, // ms between shots
+        projectileSpeed: 350,
+        projectileKey: 'axe_projectile', // The image key for the projectile
+        projectileScale: 1,
+        effectScale: 0,  // No effect for axe (it is thrown)
+        effectDuration: 0,
+        rotation: true   // Axe rotates when thrown
+      }
+    };
     
-    // Bow and Arrow stats
-    this.bowDamage = 35; // More damage than rock
-    this.bowFireRate = 1500; // Slower reload than rock
-    this.bowSpeed = 450; // Faster projectile than rock
+    // Current weapon
+    this.currentWeapon = 'rock';
+    this.lastFired = 0;
     
     // Game settings
     this.gameTime = 0;
@@ -50,30 +77,41 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
-    // Create world bounds
-    this.physics.world.setBounds(0, 0, this.mapWidth, this.mapHeight);
-    
-    // Create background
+    // Create game elements
     this.createBackground();
-    
-    // Create player
     this.createPlayer();
     
-    // Create groups
+    // Create enemy animations
+    this.anims.create({
+      key: 'enemy_walk',
+      frames: [
+        { key: 'enemy_walk_1' },
+        { key: 'enemy_walk_2' },
+        { key: 'enemy_walk_3' },
+        { key: 'enemy_walk_4' }
+      ],
+      frameRate: 8,
+      repeat: -1
+    });
+    
+    // Create game objects
     this.enemies = this.physics.add.group();
     this.crystals = this.physics.add.group();
-    this.rocks = this.physics.add.group();
-    this.arrows = this.physics.add.group();
+    this.projectiles = this.physics.add.group();
     
-    // Set up collisions
+    // Setup controls and collisions
+    this.setupControls();
     this.setupCollisions();
     
-    // Set up camera
+    // Setup camera to follow player
     this.cameras.main.setBounds(0, 0, this.mapWidth, this.mapHeight);
-    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+    this.cameras.main.startFollow(this.player);
     
-    // Set up controls
-    this.setupControls();
+    // Setup game events
+    this.events.on('player-level-up', this.onPlayerLevelUp, this);
+    
+    // Set world bounds
+    this.physics.world.setBounds(0, 0, this.mapWidth, this.mapHeight);
     
     // Start game timer
     this.time.addEvent({
@@ -90,9 +128,6 @@ export default class GameScene extends Phaser.Scene {
       callbackScope: this,
       loop: true
     });
-    
-    // Register events
-    this.events.on('player-level-up', this.onPlayerLevelUp, this);
     
     // Emit initial events to UI
     this.events.emit('update-player-health', this.playerHealth, this.playerMaxHealth);
@@ -150,6 +185,20 @@ export default class GameScene extends Phaser.Scene {
     this.player.setSize(48, 48);
     this.player.setDepth(10);
     this.player.body.setCircle(24);
+    this.player.setFlipX(false); // Default facing right
+    
+    // Create player animations
+    this.anims.create({
+      key: 'player_walk',
+      frames: [
+        { key: 'player_walk_1' },
+        { key: 'player_walk_2' },
+        { key: 'player_walk_3' },
+        { key: 'player_walk_4' }
+      ],
+      frameRate: 8,
+      repeat: -1
+    });
     
     // Add player data
     this.player.health = this.playerHealth;
@@ -210,17 +259,9 @@ export default class GameScene extends Phaser.Scene {
     
     // Weapon collisions
     this.physics.add.overlap(
-      this.rocks,
+      this.projectiles,
       this.enemies,
-      this.rockHitEnemy,
-      null,
-      this
-    );
-    
-    this.physics.add.overlap(
-      this.arrows,
-      this.enemies,
-      this.arrowHitEnemy,
+      this.projectileHitEnemy,
       null,
       this
     );
@@ -268,22 +309,48 @@ export default class GameScene extends Phaser.Scene {
         dirX * this.playerSpeed,
         dirY * this.playerSpeed
       );
+      
+      // Play walk animation when moving
+      if (!this.player.anims.isPlaying) {
+        this.player.play('player_walk');
+      }
+      
+      // Flip player sprite based on horizontal movement direction
+      if (dirX < 0) {
+        // Moving left, flip sprite
+        this.player.setFlipX(true);
+      } else if (dirX > 0) {
+        // Moving right, don't flip sprite
+        this.player.setFlipX(false);
+      }
+      // If only moving vertically, keep current flip state
+    } else {
+      // Stop animation when not moving
+      if (this.player.anims.isPlaying) {
+        this.player.anims.stop();
+        this.player.setTexture('player');
+      }
     }
   }
 
   handleWeaponFiring(time) {
-    // Get the current weapon's fire rate
-    const fireRate = this.currentWeapon === 'bow' ? this.bowFireRate : this.weaponFireRate;
+    // Get the current weapon's configuration
+    const weaponConfig = this.weapons[this.currentWeapon];
     
-    if (time > this.lastFired + fireRate) {
+    if (time > this.lastFired + weaponConfig.fireRate) {
       const nearestEnemy = this.findNearestEnemy();
       
       if (nearestEnemy) {
-        if (this.currentWeapon === 'bow') {
-          this.fireArrow(nearestEnemy);
+        // Make player face the enemy when firing
+        if (nearestEnemy.x < this.player.x) {
+          // Enemy is to the left, face left
+          this.player.setFlipX(true);
         } else {
-          this.fireRock(nearestEnemy);
+          // Enemy is to the right, face right
+          this.player.setFlipX(false);
         }
+        
+        this.fireWeapon(nearestEnemy, weaponConfig);
         this.lastFired = time;
       }
     }
@@ -308,57 +375,62 @@ export default class GameScene extends Phaser.Scene {
     return nearestEnemy;
   }
 
-  fireRock(target) {
-    const rock = this.rocks.create(this.player.x, this.player.y, 'rock');
-    rock.setDepth(5);
+  fireWeapon(target, weaponConfig) {
+    // Create projectile
+    const projectile = this.projectiles.create(this.player.x, this.player.y, weaponConfig.projectileKey);
+    projectile.setDepth(5);
+    projectile.setScale(weaponConfig.projectileScale);
+    
+    // Set weapon type for collision handling
+    projectile.weaponType = this.currentWeapon;
     
     // Calculate direction to target
     const dx = target.x - this.player.x;
     const dy = target.y - this.player.y;
     const angle = Math.atan2(dy, dx);
     
-    // Set rock properties
-    rock.rotation = angle;
-    rock.damage = this.weaponDamage;
+    // Set projectile properties
+    projectile.rotation = angle;
+    projectile.damage = weaponConfig.damage;
+    
+    // Add rotation animation for certain weapons (like axes)
+    if (weaponConfig.rotation) {
+      this.tweens.add({
+        targets: projectile,
+        rotation: angle + Math.PI * 4, // Rotate 720 degrees (2 full rotations)
+        duration: 1000,
+        repeat: -1
+      });
+    }
+    
+    // Add a visual effect when firing if configured
+    if (weaponConfig.effectScale > 0) {
+      const weaponEffect = this.add.image(this.player.x, this.player.y, this.currentWeapon);
+      weaponEffect.setDepth(4);
+      weaponEffect.setScale(weaponConfig.effectScale);
+      weaponEffect.rotation = angle;
+      
+      // Fade out and remove the weapon effect
+      this.tweens.add({
+        targets: weaponEffect,
+        alpha: 0,
+        duration: weaponConfig.effectDuration,
+        onComplete: () => {
+          weaponEffect.destroy();
+        }
+      });
+    }
     
     // Set velocity
-    const speed = 300;
-    rock.setVelocity(
-      Math.cos(angle) * speed,
-      Math.sin(angle) * speed
+    projectile.setVelocity(
+      Math.cos(angle) * weaponConfig.projectileSpeed,
+      Math.sin(angle) * weaponConfig.projectileSpeed
     );
     
-    // Destroy rock after 2 seconds
+    // Destroy projectile after 2 seconds
     this.time.delayedCall(2000, () => {
-      if (rock.active) {
-        rock.destroy();
-      }
-    });
-  }
-
-  fireArrow(target) {
-    const arrow = this.arrows.create(this.player.x, this.player.y, 'bow');
-    arrow.setDepth(5);
-    
-    // Calculate direction to target
-    const dx = target.x - this.player.x;
-    const dy = target.y - this.player.y;
-    const angle = Math.atan2(dy, dx);
-    
-    // Set arrow properties
-    arrow.rotation = angle;
-    arrow.damage = this.bowDamage;
-    
-    // Set velocity - faster than rock
-    arrow.setVelocity(
-      Math.cos(angle) * this.bowSpeed,
-      Math.sin(angle) * this.bowSpeed
-    );
-    
-    // Destroy arrow after 2 seconds
-    this.time.delayedCall(2000, () => {
-      if (arrow.active) {
-        arrow.destroy();
+      if (projectile.active) {
+        projectile.destroy();
       }
     });
   }
@@ -415,6 +487,9 @@ export default class GameScene extends Phaser.Scene {
     enemy.speed = this.enemySpeed;
     enemy.setSize(40, 40);
     enemy.body.setCircle(20);
+    
+    // Play walk animation
+    enemy.play('enemy_walk');
   }
 
   updateEnemies() {
@@ -424,12 +499,22 @@ export default class GameScene extends Phaser.Scene {
       const dy = this.player.y - enemy.y;
       const angle = Math.atan2(dy, dx);
       
-      enemy.rotation = angle;
+      // We don't need rotation since we're using sprites now
+      // enemy.rotation = angle;
       
       enemy.setVelocity(
         Math.cos(angle) * enemy.speed,
         Math.sin(angle) * enemy.speed
       );
+      
+      // Flip enemy sprite based on player position
+      if (this.player.x < enemy.x) {
+        // Player is to the left, face left
+        enemy.setFlipX(true);
+      } else {
+        // Player is to the right, face right
+        enemy.setFlipX(false);
+      }
     });
   }
 
@@ -449,12 +534,12 @@ export default class GameScene extends Phaser.Scene {
     this.events.emit('update-player-xp', this.playerXP, this.playerMaxXP);
   }
 
-  rockHitEnemy(rock, enemy) {
+  projectileHitEnemy(projectile, enemy) {
     // Apply damage
-    enemy.health -= rock.damage;
+    enemy.health -= projectile.damage;
     
-    // Destroy rock
-    rock.destroy();
+    // Destroy projectile
+    projectile.destroy();
     
     // Check if enemy is defeated
     if (enemy.health <= 0) {
@@ -463,23 +548,6 @@ export default class GameScene extends Phaser.Scene {
       
       // Destroy enemy
       enemy.destroy();
-    }
-  }
-
-  arrowHitEnemy(arrow, enemy) {
-    // Damage enemy
-    enemy.health -= arrow.damage;
-    
-    // Destroy arrow
-    arrow.destroy();
-    
-    // Check if enemy is dead
-    if (enemy.health <= 0) {
-      // Destroy enemy
-      enemy.destroy();
-      
-      // Spawn crystal
-      this.spawnCrystal(enemy.x, enemy.y);
     }
   }
 
@@ -523,16 +591,24 @@ export default class GameScene extends Phaser.Scene {
     this.playerSpeed += 10;
     
     // Increase weapon stats
-    this.weaponDamage += 5;
-    this.weaponFireRate = Math.max(200, this.weaponFireRate - 100);
+    Object.keys(this.weapons).forEach(weaponKey => {
+      const weapon = this.weapons[weaponKey];
+      
+      // Increase damage
+      weapon.damage += weaponKey === 'bow' ? 8 : (weaponKey === 'axe' ? 10 : 5);
+      
+      // Improve fire rate
+      const fireRateReduction = weaponKey === 'bow' ? 75 : (weaponKey === 'axe' ? 100 : 100);
+      const minFireRate = weaponKey === 'bow' ? 300 : (weaponKey === 'axe' ? 500 : 200);
+      weapon.fireRate = Math.max(minFireRate, weapon.fireRate - fireRateReduction);
+    });
     
-    // Increase bow stats
-    this.bowDamage += 8;
-    this.bowFireRate = Math.max(300, this.bowFireRate - 75);
-    
-    // Unlock bow at level 3
+    // Unlock weapons at specific levels
     if (this.playerLevel === 3 && this.currentWeapon === 'rock') {
       this.currentWeapon = 'bow';
+      this.events.emit('update-weapon', this.currentWeapon);
+    } else if (this.playerLevel === 5) {
+      this.currentWeapon = 'axe';
       this.events.emit('update-weapon', this.currentWeapon);
     }
     

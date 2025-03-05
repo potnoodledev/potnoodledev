@@ -228,13 +228,18 @@ export default class UIScene extends Phaser.Scene {
   }
 
   updateWeaponDisplay(weapon) {
+    // Get the GameScene to access weapon configurations
+    const gameScene = this.scene.get('GameScene');
+    
     // Update weapon icon and text based on current weapon
-    if (weapon === 'bow') {
-      this.weaponIcon.setTexture('bow');
-      this.weaponText.setText('Bow');
+    if (gameScene.weapons && gameScene.weapons[weapon]) {
+      const weaponConfig = gameScene.weapons[weapon];
+      this.weaponIcon.setTexture(weapon);
+      this.weaponText.setText(weaponConfig.name);
     } else {
-      this.weaponIcon.setTexture('rock');
-      this.weaponText.setText('Rock');
+      // Fallback if weapon config not found
+      this.weaponIcon.setTexture(weapon);
+      this.weaponText.setText(weapon.charAt(0).toUpperCase() + weapon.slice(1));
     }
   }
 } 

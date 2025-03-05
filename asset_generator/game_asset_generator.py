@@ -171,14 +171,13 @@ def generate_game_asset(asset_type, description, output_path=None, width=None, h
             width = width or 64
             height = height or 64
         elif asset_type == "weapon":
-            width = width or 48
-            height = height or 48
+            width = width or 32
+            height = height or 32
         elif asset_type == "item":
             width = width or 32
             height = height or 32
         elif asset_type == "environment":
             width = width or 128
-            height = height or 128
         elif asset_type == "effect":
             width = width or 64
             height = height or 64
@@ -204,7 +203,8 @@ def generate_game_asset(asset_type, description, output_path=None, width=None, h
             "shading": "medium shading",
             "detail": "medium detail",
             "view": "side",
-            "negative_description": "blurry, low quality, realistic, 3D, complex background"
+            "direction": "east",  # Always face east
+            "negative_description": "blurry, low quality, realistic, 3D, complex background, floor, shadows, ground, standing on ground, shadow under feet, shadow beneath character"
         })
     elif asset_type == "enemy":
         common_params.update({
@@ -212,7 +212,8 @@ def generate_game_asset(asset_type, description, output_path=None, width=None, h
             "shading": "medium shading",
             "detail": "medium detail",
             "view": "side",
-            "negative_description": "blurry, low quality, realistic, 3D, complex background"
+            "direction": "east",  # Always face east
+            "negative_description": "blurry, low quality, realistic, 3D, complex background, floor, shadows, ground, standing on ground, shadow under feet, shadow beneath character, portrait, bust, headshot, face only, dark background, checkered background, close-up"
         })
     elif asset_type == "weapon":
         common_params.update({
@@ -249,6 +250,18 @@ def generate_game_asset(asset_type, description, output_path=None, width=None, h
     # Enhance the description with pixel art styling
     enhanced_description = f"pixel art {description}, for a vampire survivors style game, pixelated, game asset"
     
+    # Enhance the description based on asset type
+    if "pixel art" not in enhanced_description.lower():
+        enhanced_description = f"pixel art {enhanced_description}"
+    
+    if "game sprite" not in enhanced_description.lower():
+        enhanced_description = f"{enhanced_description} game sprite"
+    
+    # Only add "full body" for character and enemy assets
+    if asset_type in ["character", "enemy"]:
+        if "full body" not in enhanced_description.lower():
+            enhanced_description = f"full body {enhanced_description}"
+    
     # Generate the asset
     return generate_pixel_art(
         description=enhanced_description,
@@ -259,13 +272,13 @@ def generate_game_asset(asset_type, description, output_path=None, width=None, h
         **common_params
     )
 
-def generate_character_set(character_description, output_dir="characters", seed=None, api_token=None):
+def generate_character_set(character_description, output_dir="src/assets/images", seed=None, api_token=None):
     """
-    Generate a character asset with consistent styling.
+    Generate a character asset with consistent styling and save directly to the game's src folder.
     
     Args:
         character_description (str): Description of the character.
-        output_dir (str, optional): Directory to save the character asset to. Defaults to "characters".
+        output_dir (str, optional): Directory to save the character asset to. Defaults to "src/assets/images".
         seed (int, optional): Seed for the generation process. If None, a random seed will be used.
         api_token (str, optional): PixelLab API token. If None, it will be read from the PIXELLAB_API_TOKEN environment variable.
         
@@ -280,29 +293,29 @@ def generate_character_set(character_description, output_dir="characters", seed=
     os.makedirs(output_dir, exist_ok=True)
     
     # Generate idle character asset
-    character_filename = f"{character_description.replace(' ', '_')}.png"
-    character_path = os.path.join(output_dir, character_filename)
+    character_path = os.path.join(output_dir, "player.png")
     
     # Generate the character
     result = generate_game_asset(
         asset_type="character",
-        description=f"{character_description} standing idle",
+        description=f"full body pixel art {character_description} standing idle game sprite character facing right",
         output_path=character_path,
         seed=seed,
-        api_token=api_token
+        api_token=api_token,
+        no_background=True  # Explicitly ensure transparent background
     )
     
     print(f"Generated character asset: {character_path}")
     return character_path
 
-def generate_enemy_set(enemy_type, output_dir="enemies", count=3, seed=None, api_token=None):
+def generate_enemy_set(enemy_type, output_dir="src/assets/images", count=1, seed=None, api_token=None):
     """
-    Generate a set of enemy assets with variations.
+    Generate an enemy asset and save directly to the game's src folder.
     
     Args:
         enemy_type (str): Type of enemy to generate (e.g., "zombie", "skeleton", "vampire").
-        output_dir (str, optional): Directory to save the enemy assets to. Defaults to "enemies".
-        count (int, optional): Number of variations to generate. Defaults to 3.
+        output_dir (str, optional): Directory to save the enemy assets to. Defaults to "src/assets/images".
+        count (int, optional): Number of variations to generate. Defaults to 1.
         seed (int, optional): Seed for the generation process. If None, a random seed will be used.
         api_token (str, optional): PixelLab API token. If None, it will be read from the PIXELLAB_API_TOKEN environment variable.
         
@@ -319,36 +332,53 @@ def generate_enemy_set(enemy_type, output_dir="enemies", count=3, seed=None, api
     # Generate enemy assets
     assets = []
     
-    for i in range(count):
-        # Add variations to the description
-        if i == 0:
-            description = f"{enemy_type}"
-        elif i == 1:
-            description = f"larger {enemy_type}"
-        else:
-            description = f"elite {enemy_type} with special features"
-        
-        # Generate enemy asset
-        enemy_path = os.path.join(output_dir, f"{enemy_type}_{i+1}.png")
-        asset = generate_game_asset(
-            asset_type="enemy",
-            description=description,
-            output_path=enemy_path,
-            seed=seed + i,  # Use a different but related seed for each variation
-            api_token=api_token
-        )
-        
-        assets.append(asset)
+    # Generate the main enemy asset (will be used as enemy.png)
+    enemy_path = os.path.join(output_dir, "enemy.png")
+    asset = generate_game_asset(
+        asset_type="enemy",
+        description=f"full body pixel art {enemy_type} game sprite character facing right",
+        output_path=enemy_path,
+        seed=seed,
+        api_token=api_token,
+        no_background=True  # Explicitly ensure transparent background
+    )
+    
+    assets.append(asset)
+    print(f"Generated main enemy asset: {enemy_path}")
+    
+    # Generate additional variations if requested
+    if count > 1:
+        for i in range(1, count):
+            # Add variations to the description
+            if i == 1:
+                description = f"full body pixel art larger {enemy_type} game sprite character facing right"
+            else:
+                description = f"full body pixel art elite {enemy_type} with special features game sprite character facing right"
+            
+            # Generate enemy asset
+            variation_path = os.path.join(output_dir, f"enemy_{i}.png")
+            asset = generate_game_asset(
+                asset_type="enemy",
+                description=description,
+                output_path=variation_path,
+                seed=seed + i,  # Use a different but related seed for each variation
+                api_token=api_token,
+                no_background=True  # Explicitly ensure transparent background
+            )
+            
+            assets.append(asset)
+            print(f"Generated enemy variation: {variation_path}")
     
     return assets
 
-def generate_weapon_set(weapon_type, output_dir="weapons", seed=None, api_token=None):
+def generate_weapon_set(weapon_type, output_dir="src/assets/images/weapons", output_filename=None, seed=None, api_token=None):
     """
     Generate a weapon asset.
     
     Args:
         weapon_type (str): Type of weapon to generate (e.g., "sword", "axe", "wand").
-        output_dir (str, optional): Directory to save the weapon asset to. Defaults to "weapons".
+        output_dir (str, optional): Directory to save the weapon asset to. Defaults to "src/assets/images/weapons".
+        output_filename (str, optional): Filename to use for the weapon. If None, a filename will be generated from the weapon type.
         seed (int, optional): Seed for the generation process. If None, a random seed will be used.
         api_token (str, optional): PixelLab API token. If None, it will be read from the PIXELLAB_API_TOKEN environment variable.
         
@@ -363,30 +393,36 @@ def generate_weapon_set(weapon_type, output_dir="weapons", seed=None, api_token=
     os.makedirs(output_dir, exist_ok=True)
     
     # Generate weapon asset
-    weapon_filename = f"{weapon_type}.png"
+    if output_filename is None:
+        weapon_filename = f"{weapon_type.replace(' ', '_')}.png"
+    else:
+        weapon_filename = output_filename
+    
     weapon_path = os.path.join(output_dir, weapon_filename)
     
     # Generate the weapon
     result = generate_game_asset(
         asset_type="weapon",
-        description=f"{weapon_type}",
+        description=f"isolated {weapon_type}, simple pixel art icon, small weapon icon, no character, top-down view, small size",
         output_path=weapon_path,
         seed=seed,
         api_token=api_token,
-        no_background=True  # Explicitly ensure transparent background
+        no_background=True,  # Explicitly ensure transparent background
+        width=32,
+        height=32
     )
     
     print(f"Generated weapon asset: {weapon_path}")
     return weapon_path
 
-def generate_item_set(item_type, variations=["standard", "rare", "epic"], output_dir="items", seed=None, api_token=None):
+def generate_item_set(item_type, variations=["standard", "rare", "epic"], output_dir="src/assets/images/items", seed=None, api_token=None):
     """
     Generate a set of item assets with variations.
     
     Args:
         item_type (str): Type of item to generate (e.g., "potion", "coin", "powerup").
         variations (list, optional): List of variations to generate. Defaults to ["standard", "rare", "epic"].
-        output_dir (str, optional): Directory to save the item assets to. Defaults to "items".
+        output_dir (str, optional): Directory to save the item assets to. Defaults to "src/assets/images/items".
         seed (int, optional): Seed for the generation process. If None, a random seed will be used.
         api_token (str, optional): PixelLab API token. If None, it will be read from the PIXELLAB_API_TOKEN environment variable.
         
@@ -432,13 +468,14 @@ def generate_item_set(item_type, variations=["standard", "rare", "epic"], output
     
     return assets
 
-def generate_item(item_description, output_dir="items", seed=None, api_token=None):
+def generate_item(item_description, output_dir="src/assets/images/items", output_filename=None, seed=None, api_token=None):
     """
     Generate a single item asset.
     
     Args:
-        item_description (str): Description of the item to generate.
-        output_dir (str, optional): Directory to save the item asset to. Defaults to "items".
+        item_description (str): Description of the item.
+        output_dir (str, optional): Directory to save the item asset to. Defaults to "src/assets/images/items".
+        output_filename (str, optional): Filename to use for the item. If None, a filename will be generated from the item description.
         seed (int, optional): Seed for the generation process. If None, a random seed will be used.
         api_token (str, optional): PixelLab API token. If None, it will be read from the PIXELLAB_API_TOKEN environment variable.
         
@@ -453,27 +490,33 @@ def generate_item(item_description, output_dir="items", seed=None, api_token=Non
     os.makedirs(output_dir, exist_ok=True)
     
     # Generate item asset
-    item_filename = f"{item_description.replace(' ', '_')}.png"
+    if output_filename is None:
+        item_filename = f"{item_description.replace(' ', '_')}.png"
+    else:
+        item_filename = output_filename
+    
     item_path = os.path.join(output_dir, item_filename)
     
     # Generate the item
     result = generate_game_asset(
         asset_type="item",
-        description=item_description,
+        description=f"isolated {item_description}, simple pixel art icon, small item icon, no character, top-down view, small size",
         output_path=item_path,
         seed=seed,
         api_token=api_token,
-        no_background=True  # Explicitly ensure transparent background
+        no_background=True,  # Explicitly ensure transparent background
+        width=32,
+        height=32
     )
     
     print(f"Generated item asset: {item_path}")
     return item_path
 
 def generate_character_animation(character_description, action="walk", view="side", direction="east", 
-                               n_frames=4, reference_image_path=None, output_dir="characters", 
-                               output_format="spritesheet", seed=None, api_token=None):
+                               n_frames=4, reference_image_path=None, output_dir="src/assets/images/player", 
+                               output_format="frames", seed=None, api_token=None):
     """
-    Generate an animated version of a character using the PixelLab animation API.
+    Generate an animated version of a character and save directly to the game's src folder.
     
     Args:
         character_description (str): Description of the character.
@@ -483,8 +526,8 @@ def generate_character_animation(character_description, action="walk", view="sid
                                   "south", "south-west", "west", "north-west". Defaults to "east".
         n_frames (int, optional): Number of frames in the animation. Defaults to 4.
         reference_image_path (str, optional): Path to the reference image. If None, a new character will be generated.
-        output_dir (str, optional): Directory to save the animation to. Defaults to "characters".
-        output_format (str, optional): Format to save the animation in. One of: "spritesheet", "gif", "frames". Defaults to "spritesheet".
+        output_dir (str, optional): Directory to save the animation to. Defaults to "src/assets/images/player".
+        output_format (str, optional): Format to save the animation in. One of: "spritesheet", "gif", "frames". Defaults to "frames".
         seed (int, optional): Seed for the generation process. If None, a random seed will be used.
         api_token (str, optional): PixelLab API token. If None, it will be read from the PIXELLAB_API_TOKEN environment variable.
         
@@ -495,21 +538,21 @@ def generate_character_animation(character_description, action="walk", view="sid
     if seed is None:
         seed = random.randint(1, 1000000)
     
+    # Always use east direction regardless of what's passed in
+    direction = "east"
+    
     # Get API token from parameter or environment variable
     if not api_token:
         api_token = os.getenv("PIXELLAB_API_TOKEN")
     if not api_token:
         raise ValueError("API token not found. Please provide an API token or set the PIXELLAB_API_TOKEN environment variable.")
     
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # If no reference image is provided, generate one
+    # If no reference image is provided, generate one and save it to the main player.png location
     if reference_image_path is None:
         print(f"No reference image provided. Generating a new character...")
         reference_image_path = generate_character_set(
             character_description=character_description,
-            output_dir=output_dir,
+            output_dir="src/assets/images",  # Save to main images directory
             seed=seed,
             api_token=api_token
         )
@@ -524,7 +567,7 @@ def generate_character_animation(character_description, action="walk", view="sid
     
     # Prepare API parameters
     api_params = {
-        "description": character_description,
+        "description": f"full body pixel art {character_description} game sprite character facing right moving right",
         "action": action,
         "view": view,
         "direction": direction,
@@ -532,7 +575,7 @@ def generate_character_animation(character_description, action="walk", view="sid
         "reference_image": reference_pil_image,
         "n_frames": n_frames,
         "seed": seed,
-        "negative_description": "blurry, low quality, realistic, 3D, complex background"  # Add a default negative prompt
+        "negative_description": "blurry, low quality, realistic, 3D, complex background, floor, shadows, ground, standing on ground, shadow under feet, shadow beneath character, portrait, bust, headshot, face only, dark background, checkered background, close-up, facing left, facing forward, facing back, moving left"
     }
     
     # Call the animation API
@@ -550,76 +593,65 @@ def generate_character_animation(character_description, action="walk", view="sid
                 img_data = image.base64.split("base64,")[1] if "base64," in image.base64 else image.base64
                 frames.append(Image.open(io.BytesIO(base64.b64decode(img_data))))
         
-        # Create output filename
-        base_filename = f"{character_description.replace(' ', '_')}_{action}_{direction}"
+        # Create the walk directory if it doesn't exist
+        walk_dir = os.path.join(output_dir, action)
+        os.makedirs(walk_dir, exist_ok=True)
         
         # Save the animation in the requested format
-        if output_format == "spritesheet":
-            # Create a spritesheet (horizontal strip of frames)
-            width, height = frames[0].size
-            spritesheet = Image.new("RGBA", (width * len(frames), height))
-            
+        if output_format == "frames":
+            # Save individual frames in the walk directory
+            frame_paths = []
             for i, frame in enumerate(frames):
-                spritesheet.paste(frame, (i * width, 0))
+                frame_path = os.path.join(walk_dir, f"frame_{i+1}.png")
+                frame.save(frame_path)
+                frame_paths.append(frame_path)
             
-            output_path = os.path.join(output_dir, f"{base_filename}_spritesheet.png")
-            spritesheet.save(output_path)
-            print(f"Saved spritesheet to {output_path}")
-            return output_path
-        
+            print(f"Saved {len(frame_paths)} animation frames to {walk_dir}")
+            return walk_dir
+        elif output_format == "spritesheet":
+            # Create a spritesheet
+            spritesheet_path = os.path.join(output_dir, f"{character_description.replace(' ', '_')}_{action}_spritesheet.png")
+            create_spritesheet(frames, spritesheet_path)
+            print(f"Saved animation spritesheet to {spritesheet_path}")
+            return spritesheet_path
         elif output_format == "gif":
-            # Create an animated GIF
-            output_path = os.path.join(output_dir, f"{base_filename}.gif")
+            # Create a GIF
+            gif_path = os.path.join(output_dir, f"{character_description.replace(' ', '_')}_{action}.gif")
             frames[0].save(
-                output_path,
+                gif_path,
                 save_all=True,
                 append_images=frames[1:],
                 optimize=False,
-                duration=150,  # 150ms per frame (approximately 6-7 fps)
+                duration=100,  # 100ms per frame
                 loop=0  # Loop forever
             )
-            print(f"Saved animated GIF to {output_path}")
-            return output_path
-        
-        elif output_format == "frames":
-            # Save individual frames
-            frames_dir = os.path.join(output_dir, base_filename)
-            os.makedirs(frames_dir, exist_ok=True)
-            
-            for i, frame in enumerate(frames):
-                frame_path = os.path.join(frames_dir, f"frame_{i+1}.png")
-                frame.save(frame_path)
-            
-            print(f"Saved {len(frames)} frames to {frames_dir}")
-            return frames_dir
-        
+            print(f"Saved animation GIF to {gif_path}")
+            return gif_path
         else:
             raise ValueError(f"Invalid output format: {output_format}. Must be one of: 'spritesheet', 'gif', 'frames'.")
     
     except Exception as e:
-        print(f"Error generating animation: {str(e)}")
-        print("API parameters used:")
-        for key, value in api_params.items():
-            if key != "reference_image":  # Don't print the image data
-                print(f"  {key}: {value}")
+        print(f"Error generating animation: {e}")
         raise
+    
+    return None
 
-def generate_enemy_animation(enemy_type, action="idle", view="side", direction="east", 
-                           n_frames=4, reference_image_path=None, output_dir="enemies", 
-                           output_format="spritesheet", seed=None, api_token=None):
+def generate_enemy_animation(enemy_type, action="walk", view="side", direction="east", 
+                           n_frames=4, reference_image_path=None, output_dir="src/assets/images/enemies", 
+                           output_format="frames", seed=None, api_token=None):
     """
-    Generate an animated version of an enemy using the PixelLab animation API.
+    Generate an animated version of an enemy and save directly to the game's src folder.
     
     Args:
         enemy_type (str): Type of enemy to generate (e.g., "zombie", "skeleton", "vampire").
-        action (str, optional): Action for the animation (e.g., "idle", "attack", "walk"). Defaults to "idle".
+        action (str, optional): Action for the animation (e.g., "idle", "attack", "walk"). Defaults to "walk".
         view (str, optional): View perspective for the animation. One of: "side", "low top-down", "high top-down". Defaults to "side".
         direction (str, optional): Direction for the animation. One of: "north", "north-east", "east", "south-east", 
                                   "south", "south-west", "west", "north-west". Defaults to "east".
         n_frames (int, optional): Number of frames in the animation. Defaults to 4.
         reference_image_path (str, optional): Path to the reference image. If None, a new enemy will be generated.
-        output_dir (str, optional): Directory to save the animation to. Defaults to "enemies".
-        output_format (str, optional): Format to save the animation in. One of: "spritesheet", "gif", "frames". Defaults to "spritesheet".
+        output_dir (str, optional): Directory to save the animation to. Defaults to "src/assets/images/enemies".
+        output_format (str, optional): Format to save the animation in. One of: "spritesheet", "gif", "frames". Defaults to "frames".
         seed (int, optional): Seed for the generation process. If None, a random seed will be used.
         api_token (str, optional): PixelLab API token. If None, it will be read from the PIXELLAB_API_TOKEN environment variable.
         
@@ -630,22 +662,22 @@ def generate_enemy_animation(enemy_type, action="idle", view="side", direction="
     if seed is None:
         seed = random.randint(1, 1000000)
     
+    # Always use east direction regardless of what's passed in
+    direction = "east"
+    
     # Get API token from parameter or environment variable
     if not api_token:
         api_token = os.getenv("PIXELLAB_API_TOKEN")
     if not api_token:
         raise ValueError("API token not found. Please provide an API token or set the PIXELLAB_API_TOKEN environment variable.")
     
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # If no reference image is provided, generate one
+    # If no reference image is provided, generate one and save it to the main enemy.png location
     if reference_image_path is None:
         print(f"No reference image provided. Generating a new enemy...")
         # Generate a basic enemy and use the first variation
         enemy_assets = generate_enemy_set(
             enemy_type=enemy_type,
-            output_dir=output_dir,
+            output_dir="src/assets/images",  # Save to main images directory
             count=1,  # Just generate one enemy
             seed=seed,
             api_token=api_token
@@ -662,7 +694,7 @@ def generate_enemy_animation(enemy_type, action="idle", view="side", direction="
     
     # Prepare API parameters
     api_params = {
-        "description": enemy_type,
+        "description": f"full body pixel art {enemy_type} game sprite character facing right moving right",
         "action": action,
         "view": view,
         "direction": direction,
@@ -670,7 +702,7 @@ def generate_enemy_animation(enemy_type, action="idle", view="side", direction="
         "reference_image": reference_pil_image,
         "n_frames": n_frames,
         "seed": seed,
-        "negative_description": "blurry, low quality, realistic, 3D, complex background"  # Add a default negative prompt
+        "negative_description": "blurry, low quality, realistic, 3D, complex background, floor, shadows, ground, standing on ground, shadow under feet, shadow beneath character, portrait, bust, headshot, face only, dark background, checkered background, close-up, facing left, facing forward, facing back, moving left"
     }
     
     # Call the animation API
@@ -688,55 +720,167 @@ def generate_enemy_animation(enemy_type, action="idle", view="side", direction="
                 img_data = image.base64.split("base64,")[1] if "base64," in image.base64 else image.base64
                 frames.append(Image.open(io.BytesIO(base64.b64decode(img_data))))
         
-        # Create output filename
-        base_filename = f"{enemy_type.replace(' ', '_')}_{action}_{direction}"
+        # Create the walk directory if it doesn't exist
+        walk_dir = os.path.join(output_dir, action)
+        os.makedirs(walk_dir, exist_ok=True)
         
         # Save the animation in the requested format
-        if output_format == "spritesheet":
-            # Create a spritesheet (horizontal strip of frames)
-            width, height = frames[0].size
-            spritesheet = Image.new("RGBA", (width * len(frames), height))
-            
+        if output_format == "frames":
+            # Save individual frames in the walk directory
+            frame_paths = []
             for i, frame in enumerate(frames):
-                spritesheet.paste(frame, (i * width, 0))
+                frame_path = os.path.join(walk_dir, f"frame_{i+1}.png")
+                frame.save(frame_path)
+                frame_paths.append(frame_path)
             
-            output_path = os.path.join(output_dir, f"{base_filename}_spritesheet.png")
-            spritesheet.save(output_path)
-            print(f"Saved spritesheet to {output_path}")
-            return output_path
-        
+            print(f"Saved {len(frame_paths)} animation frames to {walk_dir}")
+            return walk_dir
+        elif output_format == "spritesheet":
+            # Create a spritesheet
+            spritesheet_path = os.path.join(output_dir, f"{enemy_type.replace(' ', '_')}_{action}_spritesheet.png")
+            create_spritesheet(frames, spritesheet_path)
+            print(f"Saved animation spritesheet to {spritesheet_path}")
+            return spritesheet_path
         elif output_format == "gif":
-            # Create an animated GIF
-            output_path = os.path.join(output_dir, f"{base_filename}.gif")
+            # Create a GIF
+            gif_path = os.path.join(output_dir, f"{enemy_type.replace(' ', '_')}_{action}.gif")
             frames[0].save(
-                output_path,
+                gif_path,
                 save_all=True,
                 append_images=frames[1:],
                 optimize=False,
-                duration=150,  # 150ms per frame (approximately 6-7 fps)
+                duration=100,  # 100ms per frame
                 loop=0  # Loop forever
             )
-            print(f"Saved animated GIF to {output_path}")
-            return output_path
-        
-        elif output_format == "frames":
-            # Save individual frames
-            frames_dir = os.path.join(output_dir, base_filename)
-            os.makedirs(frames_dir, exist_ok=True)
-            
-            for i, frame in enumerate(frames):
-                frame_path = os.path.join(frames_dir, f"frame_{i+1}.png")
-                frame.save(frame_path)
-            
-            print(f"Saved {len(frames)} frames to {frames_dir}")
-            return frames_dir
-        
+            print(f"Saved animation GIF to {gif_path}")
+            return gif_path
         else:
             raise ValueError(f"Invalid output format: {output_format}. Must be one of: 'spritesheet', 'gif', 'frames'.")
     
     except Exception as e:
-        print(f"Error generating animation: {str(e)}")
+        print(f"Error generating animation: {e}")
         raise
+    
+    return None
+
+def create_spritesheet(frames, output_path):
+    """
+    Create a spritesheet from a list of frames.
+    
+    Args:
+        frames (list): List of PIL Image objects.
+        output_path (str): Path to save the spritesheet to.
+        
+    Returns:
+        str: Path to the saved spritesheet.
+    """
+    # Create a spritesheet (horizontal strip of frames)
+    width, height = frames[0].size
+    spritesheet = Image.new("RGBA", (width * len(frames), height))
+    
+    for i, frame in enumerate(frames):
+        spritesheet.paste(frame, (i * width, 0))
+    
+    spritesheet.save(output_path)
+    return output_path
+
+def generate_projectile(projectile_type, weapon_name, output_dir="src/assets/images/weapons/projectiles", output_filename=None, seed=None, api_token=None):
+    """
+    Generate a projectile asset for a weapon.
+    
+    Args:
+        projectile_type (str): Type of projectile to generate (e.g., "arrow", "fireball", "bullet").
+        weapon_name (str): Name of the weapon this projectile is for.
+        output_dir (str, optional): Directory to save the projectile asset to. Defaults to "src/assets/images/weapons/projectiles".
+        output_filename (str, optional): Filename to use for the projectile. If None, a filename will be generated from the projectile type.
+        seed (int, optional): Seed for the generation process. If None, a random seed will be used.
+        api_token (str, optional): PixelLab API token. If None, it will be read from the PIXELLAB_API_TOKEN environment variable.
+        
+    Returns:
+        str: File path to the generated projectile asset.
+    """
+    # Use a random seed if none provided
+    if seed is None:
+        seed = random.randint(1, 1000000)
+    
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Generate projectile asset
+    if output_filename is None:
+        projectile_filename = f"{projectile_type.replace(' ', '_')}.png"
+    else:
+        projectile_filename = output_filename
+    
+    projectile_path = os.path.join(output_dir, projectile_filename)
+    
+    # Generate the projectile
+    result = generate_game_asset(
+        asset_type="projectile",
+        description=f"isolated {projectile_type} projectile for {weapon_name}, simple pixel art icon, small projectile, no character, top-down view, small size",
+        output_path=projectile_path,
+        seed=seed,
+        api_token=api_token,
+        no_background=True,  # Explicitly ensure transparent background
+        width=24,
+        height=24
+    )
+    
+    print(f"Generated projectile asset: {projectile_path}")
+    return projectile_path
+
+def generate_weapon_with_projectile(weapon_type, projectile_type=None, output_dir="src/assets/images/weapons", weapon_filename=None, projectile_filename=None, seed=None, api_token=None):
+    """
+    Generate a weapon asset and its projectile.
+    
+    Args:
+        weapon_type (str): Type of weapon to generate (e.g., "sword", "bow", "wand").
+        projectile_type (str, optional): Type of projectile to generate. If None, will use the weapon type.
+        output_dir (str, optional): Directory to save the weapon asset to. Defaults to "src/assets/images/weapons".
+        weapon_filename (str, optional): Filename to use for the weapon. If None, a filename will be generated from the weapon type.
+        projectile_filename (str, optional): Filename to use for the projectile. If None, a filename will be generated from the projectile type.
+        seed (int, optional): Seed for the generation process. If None, a random seed will be used.
+        api_token (str, optional): PixelLab API token. If None, it will be read from the PIXELLAB_API_TOKEN environment variable.
+        
+    Returns:
+        tuple: (weapon_path, projectile_path) - File paths to the generated weapon and projectile assets.
+    """
+    # Use a random seed if none provided
+    if seed is None:
+        seed = random.randint(1, 1000000)
+    
+    # Generate weapon
+    weapon_path = generate_weapon_set(
+        weapon_type=weapon_type,
+        output_dir=output_dir,
+        output_filename=weapon_filename,
+        seed=seed,
+        api_token=api_token
+    )
+    
+    # Determine projectile type if not provided
+    if projectile_type is None:
+        if "bow" in weapon_type.lower():
+            projectile_type = "arrow"
+        elif "gun" in weapon_type.lower() or "pistol" in weapon_type.lower():
+            projectile_type = "bullet"
+        elif "wand" in weapon_type.lower() or "staff" in weapon_type.lower():
+            projectile_type = "magic orb"
+        elif "throw" in weapon_type.lower():
+            projectile_type = weapon_type  # For throwable weapons, the projectile is the weapon itself
+        else:
+            projectile_type = f"{weapon_type} projectile"
+    
+    # Generate projectile
+    projectile_path = generate_projectile(
+        projectile_type=projectile_type,
+        weapon_name=weapon_type,
+        output_filename=projectile_filename,
+        seed=seed + 1,  # Use a different but related seed
+        api_token=api_token
+    )
+    
+    return (weapon_path, projectile_path)
 
 def main():
     """Main function to parse command-line arguments and generate pixel art."""
@@ -783,7 +927,7 @@ def main():
     # Parser for the 'character-set' command
     character_set_parser = subparsers.add_parser("character-set", help="Generate a character asset")
     character_set_parser.add_argument("--description", "-d", required=True, help="Description of the character")
-    character_set_parser.add_argument("--output-dir", "-o", default="characters", help="Directory to save the character asset to")
+    character_set_parser.add_argument("--output-dir", "-o", default="src/assets/images", help="Directory to save the character asset to")
     character_set_parser.add_argument("--seed", type=int, help="Seed for the generation process")
     character_set_parser.add_argument("--token", help="PixelLab API token (overrides environment variable)")
     
@@ -797,8 +941,8 @@ def main():
                                           help="Direction for the animation")
     character_animation_parser.add_argument("--frames", "-f", type=int, default=4, help="Number of frames in the animation")
     character_animation_parser.add_argument("--reference", "-r", help="Path to the reference image")
-    character_animation_parser.add_argument("--output-dir", "-o", default="characters", help="Directory to save the animation to")
-    character_animation_parser.add_argument("--format", "-fmt", default="spritesheet", choices=["spritesheet", "gif", "frames"], 
+    character_animation_parser.add_argument("--output-dir", "-o", default="src/assets/images/player", help="Directory to save the animation to")
+    character_animation_parser.add_argument("--format", "-fmt", default="frames", choices=["spritesheet", "gif", "frames"], 
                                           help="Format to save the animation in")
     character_animation_parser.add_argument("--seed", type=int, help="Seed for the generation process")
     character_animation_parser.add_argument("--token", help="PixelLab API token (overrides environment variable)")
@@ -806,23 +950,23 @@ def main():
     # Parser for the 'enemy-set' command
     enemy_set_parser = subparsers.add_parser("enemy-set", help="Generate a set of enemy assets")
     enemy_set_parser.add_argument("--type", "-t", required=True, help="Type of enemy to generate (e.g., zombie, skeleton)")
-    enemy_set_parser.add_argument("--output-dir", "-o", default="enemies", help="Directory to save the enemy assets to")
-    enemy_set_parser.add_argument("--count", "-c", type=int, default=3, help="Number of variations to generate")
+    enemy_set_parser.add_argument("--output-dir", "-o", default="src/assets/images", help="Directory to save the enemy assets to")
+    enemy_set_parser.add_argument("--count", "-c", type=int, default=1, help="Number of variations to generate")
     enemy_set_parser.add_argument("--seed", type=int, help="Seed for the generation process")
     enemy_set_parser.add_argument("--token", help="PixelLab API token (overrides environment variable)")
     
     # Parser for the 'enemy-animation' command
     enemy_animation_parser = subparsers.add_parser("enemy-animation", help="Generate an animated enemy")
     enemy_animation_parser.add_argument("--type", "-t", required=True, help="Type of enemy to generate (e.g., zombie, skeleton)")
-    enemy_animation_parser.add_argument("--action", "-a", default="idle", help="Action for the animation (e.g., idle, attack, walk)")
+    enemy_animation_parser.add_argument("--action", "-a", default="walk", help="Action for the animation (e.g., idle, attack, walk)")
     enemy_animation_parser.add_argument("--view", "-v", default="side", choices=["side", "low top-down", "high top-down"], help="View perspective for the animation")
     enemy_animation_parser.add_argument("--direction", "-d", default="east", 
                                       choices=["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"], 
                                       help="Direction for the animation")
     enemy_animation_parser.add_argument("--frames", "-f", type=int, default=4, help="Number of frames in the animation")
     enemy_animation_parser.add_argument("--reference", "-r", help="Path to the reference image (optional)")
-    enemy_animation_parser.add_argument("--output-dir", "-o", default="enemies", help="Directory to save the animation to")
-    enemy_animation_parser.add_argument("--format", default="spritesheet", choices=["spritesheet", "gif", "frames"], 
+    enemy_animation_parser.add_argument("--output-dir", "-o", default="src/assets/images/enemies", help="Directory to save the animation to")
+    enemy_animation_parser.add_argument("--format", default="frames", choices=["spritesheet", "gif", "frames"], 
                                       help="Format to save the animation in")
     enemy_animation_parser.add_argument("--seed", type=int, help="Seed for the generation process")
     enemy_animation_parser.add_argument("--token", help="PixelLab API token (overrides environment variable)")
@@ -830,7 +974,8 @@ def main():
     # Parser for the 'weapon-set' command
     weapon_set_parser = subparsers.add_parser("weapon-set", help="Generate a set of weapon assets")
     weapon_set_parser.add_argument("--type", "-t", required=True, help="Type of weapon to generate (e.g., sword, axe)")
-    weapon_set_parser.add_argument("--output-dir", "-o", default="weapons", help="Directory to save the weapon assets to")
+    weapon_set_parser.add_argument("--output-dir", "-o", default="src/assets/images/weapons", help="Directory to save the weapon assets to")
+    weapon_set_parser.add_argument("--output-filename", "-fn", help="Filename to use for the weapon")
     weapon_set_parser.add_argument("--seed", type=int, help="Seed for the generation process")
     weapon_set_parser.add_argument("--token", help="PixelLab API token (overrides environment variable)")
     
@@ -839,14 +984,15 @@ def main():
     item_set_parser.add_argument("--type", "-t", required=True, help="Type of item to generate (e.g., potion, coin, powerup)")
     item_set_parser.add_argument("--variations", "-v", nargs="+", default=["standard", "rare", "epic"], 
                                help="List of variations to generate (default: standard, rare, epic)")
-    item_set_parser.add_argument("--output-dir", "-o", default="items", help="Directory to save the item assets to")
+    item_set_parser.add_argument("--output-dir", "-o", default="src/assets/images/items", help="Directory to save the item assets to")
     item_set_parser.add_argument("--seed", type=int, help="Seed for the generation process")
     item_set_parser.add_argument("--token", help="PixelLab API token (overrides environment variable)")
     
     # Parser for the 'item' command
     item_parser = subparsers.add_parser("item", help="Generate a single item asset")
     item_parser.add_argument("--description", "-d", required=True, help="Description of the item to generate")
-    item_parser.add_argument("--output-dir", "-o", default="items", help="Directory to save the item asset to")
+    item_parser.add_argument("--output-dir", "-o", default="src/assets/images/items", help="Directory to save the item asset to")
+    item_parser.add_argument("--output-filename", "-fn", help="Filename to use for the item")
     item_parser.add_argument("--seed", type=int, help="Seed for the generation process")
     item_parser.add_argument("--token", help="PixelLab API token (overrides environment variable)")
     
@@ -944,6 +1090,7 @@ def main():
         weapon_path = generate_weapon_set(
             weapon_type=args.type,
             output_dir=args.output_dir,
+            output_filename=args.output_filename,
             seed=args.seed,
             api_token=args.token
         )
@@ -963,6 +1110,7 @@ def main():
         item_path = generate_item(
             item_description=args.description,
             output_dir=args.output_dir,
+            output_filename=args.output_filename,
             seed=args.seed,
             api_token=args.token
         )
