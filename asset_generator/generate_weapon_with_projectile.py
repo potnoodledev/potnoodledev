@@ -30,7 +30,9 @@ def main():
     
     # Determine weapons directory
     weapons_dir = os.path.join(project_root, "src", "assets", "images", "weapons")
+    projectiles_dir = os.path.join(weapons_dir, "projectiles")
     print(f"Weapons directory: {weapons_dir}")
+    print(f"Projectiles directory: {projectiles_dir}")
     
     # Generate weapon with projectile
     print(f"Generating weapon: {args.weapon}")
@@ -40,6 +42,7 @@ def main():
     weapon_path, projectile_path = generate_weapon_with_projectile(
         weapon_type=args.weapon,
         projectile_type=args.projectile,
+        output_dir=weapons_dir,  # Explicitly set the output directory to the absolute path
         weapon_filename=args.weapon_name,
         projectile_filename=args.projectile_name,
         seed=args.seed,

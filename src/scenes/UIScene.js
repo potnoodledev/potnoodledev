@@ -236,6 +236,16 @@ export default class UIScene extends Phaser.Scene {
       const weaponConfig = gameScene.weapons[weapon];
       this.weaponIcon.setTexture(weapon);
       this.weaponText.setText(weaponConfig.name);
+      
+      // Add a tooltip with weapon stats
+      const stats = [
+        `Damage: ${weaponConfig.damage}`,
+        `Fire Rate: ${(1000 / weaponConfig.fireRate).toFixed(1)}/s`,
+        `Speed: ${weaponConfig.projectileSpeed}`
+      ];
+      
+      // Create or update tooltip (not implemented yet)
+      console.log(`Weapon stats: ${stats.join(', ')}`);
     } else {
       // Fallback if weapon config not found
       this.weaponIcon.setTexture(weapon);

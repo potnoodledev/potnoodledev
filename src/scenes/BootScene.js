@@ -3,6 +3,22 @@ import Phaser from 'phaser';
 export default class BootScene extends Phaser.Scene {
   constructor() {
     super('BootScene');
+    
+    // Asset directories to scan
+    this.assetDirectories = {
+      characters: 'assets/images/player',
+      enemies: 'assets/images/enemies',
+      weapons: 'assets/images/weapons',
+      projectiles: 'assets/images/weapons/projectiles',
+      items: 'assets/images/items'
+    };
+    
+    // Store loaded assets for reference by other scenes
+    this.loadedAssets = {
+      weapons: [],
+      projectiles: [],
+      items: []
+    };
   }
 
   preload() {
@@ -47,18 +63,10 @@ export default class BootScene extends Phaser.Scene {
       loadingText.destroy();
     });
 
-    // Load game assets
+    // Load core game assets
     this.load.image('player', 'assets/images/player.png');
     this.load.image('enemy', 'assets/images/enemy.png');
     this.load.image('crystal', 'assets/images/items/crystal.png');
-    
-    // Load weapons and projectiles
-    this.load.image('rock', 'assets/images/weapons/rock.png');
-    this.load.image('bow', 'assets/images/weapons/bow.png');
-    this.load.image('axe', 'assets/images/weapons/axe.png');
-    this.load.image('arrow', 'assets/images/weapons/projectiles/arrow.png');
-    this.load.image('axe_projectile', 'assets/images/weapons/projectiles/axe.png');
-    
     this.load.svg('joystick', 'assets/images/joystick.svg');
     
     // Load player animations
@@ -72,10 +80,84 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('enemy_walk_2', 'assets/images/enemies/walk/frame_2.png');
     this.load.image('enemy_walk_3', 'assets/images/enemies/walk/frame_3.png');
     this.load.image('enemy_walk_4', 'assets/images/enemies/walk/frame_4.png');
+    
+    // Dynamically load weapons
+    this.loadWeapons();
+    
+    // Dynamically load projectiles
+    this.loadProjectiles();
+    
+    // Dynamically load items
+    this.loadItems();
   }
 
   create() {
-    this.scene.start('GameScene');
+    console.log('Loaded weapons:', this.loadedAssets.weapons);
+    console.log('Loaded projectiles:', this.loadedAssets.projectiles);
+    console.log('Loaded items:', this.loadedAssets.items);
+    
+    // Pass loaded assets to the GameScene
+    this.scene.start('GameScene', { loadedAssets: this.loadedAssets });
     this.scene.launch('UIScene');
+  }
+  
+  loadWeapons() {
+    // In a real implementation, this would scan the directory
+    // For now, we'll manually define the weapons we know exist
+    const weapons = ['rock', 'bow', 'axe'];
+    
+    weapons.forEach(weapon => {
+      const key = weapon;
+      const path = `assets/images/weapons/${weapon}.png`;
+      
+      // Load the weapon image
+      this.load.image(key, path);
+      
+      // Add to loaded weapons list
+      this.loadedAssets.weapons.push(key);
+    });
+  }
+  
+  loadProjectiles() {
+    // In a real implementation, this would scan the directory
+    // For now, we'll manually define the projectiles we know exist
+    const projectiles = [
+      { key: 'arrow', weapon: 'bow' },
+      { key: 'axe_projectile', weapon: 'axe', file: 'axe.png' }
+    ];
+    
+    projectiles.forEach(projectile => {
+      const key = projectile.key;
+      const filename = projectile.file || `${projectile.key}.png`;
+      const path = `assets/images/weapons/projectiles/${filename}`;
+      
+      // Load the projectile image
+      this.load.image(key, path);
+      
+      // Add to loaded projectiles list with weapon association
+      this.loadedAssets.projectiles.push({
+        key: key,
+        weapon: projectile.weapon
+      });
+    });
+  }
+  
+  loadItems() {
+    // In a real implementation, this would scan the directory
+    // For now, we'll manually define the items we know exist
+    const items = ['crystal'];
+    
+    items.forEach(item => {
+      const key = item;
+      const path = `assets/images/items/${item}.png`;
+      
+      // Load the item image (already loaded above, but included for completeness)
+      if (key !== 'crystal') { // Skip crystal as it's already loaded
+        this.load.image(key, path);
+      }
+      
+      // Add to loaded items list
+      this.loadedAssets.items.push(key);
+    });
   }
 } 

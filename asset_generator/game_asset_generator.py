@@ -396,7 +396,11 @@ def generate_weapon_set(weapon_type, output_dir="src/assets/images/weapons", out
     if output_filename is None:
         weapon_filename = f"{weapon_type.replace(' ', '_')}.png"
     else:
-        weapon_filename = output_filename
+        # Ensure filename has .png extension
+        if not output_filename.lower().endswith('.png'):
+            weapon_filename = f"{output_filename}.png"
+        else:
+            weapon_filename = output_filename
     
     weapon_path = os.path.join(output_dir, weapon_filename)
     
@@ -810,7 +814,11 @@ def generate_projectile(projectile_type, weapon_name, output_dir="src/assets/ima
     if output_filename is None:
         projectile_filename = f"{projectile_type.replace(' ', '_')}.png"
     else:
-        projectile_filename = output_filename
+        # Ensure filename has .png extension
+        if not output_filename.lower().endswith('.png'):
+            projectile_filename = f"{output_filename}.png"
+        else:
+            projectile_filename = output_filename
     
     projectile_path = os.path.join(output_dir, projectile_filename)
     
@@ -822,8 +830,8 @@ def generate_projectile(projectile_type, weapon_name, output_dir="src/assets/ima
         seed=seed,
         api_token=api_token,
         no_background=True,  # Explicitly ensure transparent background
-        width=24,
-        height=24
+        width=32,  # Minimum size required by generate_pixel_art
+        height=32  # Minimum size required by generate_pixel_art
     )
     
     print(f"Generated projectile asset: {projectile_path}")
@@ -849,6 +857,10 @@ def generate_weapon_with_projectile(weapon_type, projectile_type=None, output_di
     if seed is None:
         seed = random.randint(1, 1000000)
     
+    # Ensure filenames have .png extension
+    if weapon_filename and not weapon_filename.lower().endswith('.png'):
+        weapon_filename = f"{weapon_filename}.png"
+    
     # Generate weapon
     weapon_path = generate_weapon_set(
         weapon_type=weapon_type,
@@ -871,10 +883,19 @@ def generate_weapon_with_projectile(weapon_type, projectile_type=None, output_di
         else:
             projectile_type = f"{weapon_type} projectile"
     
+    # Ensure projectile filename has .png extension
+    if projectile_filename and not projectile_filename.lower().endswith('.png'):
+        projectile_filename = f"{projectile_filename}.png"
+    
+    # Create projectiles directory inside the weapons directory
+    projectiles_dir = os.path.join(output_dir, "projectiles")
+    os.makedirs(projectiles_dir, exist_ok=True)
+    
     # Generate projectile
     projectile_path = generate_projectile(
         projectile_type=projectile_type,
         weapon_name=weapon_type,
+        output_dir=projectiles_dir,  # Use the projectiles subdirectory
         output_filename=projectile_filename,
         seed=seed + 1,  # Use a different but related seed
         api_token=api_token

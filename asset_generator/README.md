@@ -7,7 +7,7 @@ This tool generates pixel art assets for the Evolve game, saving them directly t
 - Generate player character sprites and animations
 - Generate enemy sprites and animations
 - Generate item sprites
-- Generate weapon sprites
+- Generate weapon sprites with projectiles
 - Assets are saved directly to the game's src/assets/images directory structure
 - Animations are saved as individual frames in the appropriate folders
 
@@ -71,15 +71,6 @@ To generate multiple enemy variations:
 This will:
 1. Generate an item sprite at `src/assets/images/items/crystal.png`
 
-### Generate a weapon
-
-```bash
-./generate_weapon.py --type "bow with magical arrows" --name "bow"
-```
-
-This will:
-1. Generate a weapon sprite at `src/assets/images/weapons/bow.png`
-
 ### Generate a weapon with projectile
 
 Generate a weapon with its corresponding projectile:
@@ -111,6 +102,11 @@ Generate a wizard character with animations:
 Generate a skeleton enemy with animations:
 ```bash
 ./generate_enemy.py --type "skeleton warrior with sword" --animation --seed 67890
+```
+
+Generate a magic staff with magic orb projectile:
+```bash
+./generate_weapon_with_projectile.py --weapon "magic staff with glowing runes" --weapon-name "staff" --seed 54321
 ```
 
 ## Integration with the Game

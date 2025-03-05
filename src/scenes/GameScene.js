@@ -21,8 +21,11 @@ export default class GameScene extends Phaser.Scene {
     this.playerHealth = 100;
     this.playerMaxHealth = 100;
     
-    // Weapons configuration
-    this.weapons = {
+    // Weapons configuration - will be populated dynamically
+    this.weapons = {};
+    
+    // Default weapon templates - used to create new weapons
+    this.weaponTemplates = {
       'rock': {
         name: 'Rock',
         damage: 20,
@@ -31,7 +34,8 @@ export default class GameScene extends Phaser.Scene {
         projectileKey: 'rock', // The image key for the projectile
         projectileScale: 1,
         effectScale: 0,  // No effect for rock
-        effectDuration: 0
+        effectDuration: 0,
+        unlockLevel: 1
       },
       'bow': {
         name: 'Bow',
@@ -41,7 +45,8 @@ export default class GameScene extends Phaser.Scene {
         projectileKey: 'arrow', // The image key for the projectile
         projectileScale: 1,
         effectScale: 0.8, // Show the bow when firing
-        effectDuration: 300
+        effectDuration: 300,
+        unlockLevel: 3
       },
       'axe': {
         name: 'Throwing Axe',
@@ -52,13 +57,17 @@ export default class GameScene extends Phaser.Scene {
         projectileScale: 1,
         effectScale: 0,  // No effect for axe (it is thrown)
         effectDuration: 0,
-        rotation: true   // Axe rotates when thrown
+        rotation: true,   // Axe rotates when thrown
+        unlockLevel: 5
       }
     };
     
     // Current weapon
-    this.currentWeapon = 'rock';
+    this.currentWeapon = null;
     this.lastFired = 0;
+    
+    // Available weapons (will be populated based on loaded assets)
+    this.availableWeapons = [];
     
     // Game settings
     this.gameTime = 0;
@@ -74,6 +83,13 @@ export default class GameScene extends Phaser.Scene {
     // Map settings
     this.mapWidth = 1600;
     this.mapHeight = 1200;
+  }
+
+  init(data) {
+    // Initialize weapons based on loaded assets
+    if (data && data.loadedAssets) {
+      this.configureWeapons(data.loadedAssets);
+    }
   }
 
   create() {
@@ -594,21 +610,43 @@ export default class GameScene extends Phaser.Scene {
     Object.keys(this.weapons).forEach(weaponKey => {
       const weapon = this.weapons[weaponKey];
       
-      // Increase damage
-      weapon.damage += weaponKey === 'bow' ? 8 : (weaponKey === 'axe' ? 10 : 5);
+      // Increase damage based on weapon type
+      if (weaponKey === 'bow') {
+        weapon.damage += 8;
+      } else if (weaponKey === 'axe') {
+        weapon.damage += 10;
+      } else {
+        weapon.damage += 5;
+      }
       
-      // Improve fire rate
-      const fireRateReduction = weaponKey === 'bow' ? 75 : (weaponKey === 'axe' ? 100 : 100);
-      const minFireRate = weaponKey === 'bow' ? 300 : (weaponKey === 'axe' ? 500 : 200);
+      // Improve fire rate based on weapon type
+      let fireRateReduction = 100;
+      let minFireRate = 200;
+      
+      if (weaponKey === 'bow') {
+        fireRateReduction = 75;
+        minFireRate = 300;
+      } else if (weaponKey === 'axe') {
+        fireRateReduction = 100;
+        minFireRate = 500;
+      }
+      
       weapon.fireRate = Math.max(minFireRate, weapon.fireRate - fireRateReduction);
     });
     
-    // Unlock weapons at specific levels
-    if (this.playerLevel === 3 && this.currentWeapon === 'rock') {
-      this.currentWeapon = 'bow';
-      this.events.emit('update-weapon', this.currentWeapon);
-    } else if (this.playerLevel === 5) {
-      this.currentWeapon = 'axe';
+    // Check for weapon unlocks
+    let newWeaponUnlocked = false;
+    this.availableWeapons.forEach(weaponKey => {
+      const weapon = this.weapons[weaponKey];
+      if (weapon.unlockLevel === this.playerLevel) {
+        this.currentWeapon = weaponKey;
+        newWeaponUnlocked = true;
+        console.log(`Unlocked new weapon: ${weapon.name}`);
+      }
+    });
+    
+    // Update UI if weapon changed
+    if (newWeaponUnlocked) {
       this.events.emit('update-weapon', this.currentWeapon);
     }
     
@@ -673,5 +711,68 @@ export default class GameScene extends Phaser.Scene {
       level: this.playerLevel,
       time: this.gameTime
     });
+  }
+
+  configureWeapons(loadedAssets) {
+    // Clear existing weapons
+    this.weapons = {};
+    this.availableWeapons = [];
+    
+    // Process loaded weapons
+    loadedAssets.weapons.forEach(weaponKey => {
+      // Check if we have a template for this weapon
+      if (this.weaponTemplates[weaponKey]) {
+        // Create a copy of the template
+        this.weapons[weaponKey] = { ...this.weaponTemplates[weaponKey] };
+        
+        // Add to available weapons
+        this.availableWeapons.push(weaponKey);
+      } else {
+        // Create a generic weapon configuration if no template exists
+        this.weapons[weaponKey] = {
+          name: weaponKey.charAt(0).toUpperCase() + weaponKey.slice(1),
+          damage: 30,
+          fireRate: 1200,
+          projectileSpeed: 350,
+          projectileKey: weaponKey, // Default to using the weapon itself as projectile
+          projectileScale: 1,
+          effectScale: 0,
+          effectDuration: 0,
+          unlockLevel: 1 // Available from the start
+        };
+        
+        // Add to available weapons
+        this.availableWeapons.push(weaponKey);
+      }
+    });
+    
+    // Match projectiles with weapons
+    loadedAssets.projectiles.forEach(projectile => {
+      if (this.weapons[projectile.weapon]) {
+        this.weapons[projectile.weapon].projectileKey = projectile.key;
+      }
+    });
+    
+    // Set initial weapon
+    if (this.availableWeapons.length > 0) {
+      // Find the lowest level weapon
+      let lowestLevelWeapon = this.availableWeapons[0];
+      let lowestLevel = this.weapons[lowestLevelWeapon].unlockLevel || 1;
+      
+      this.availableWeapons.forEach(weaponKey => {
+        const weaponLevel = this.weapons[weaponKey].unlockLevel || 1;
+        if (weaponLevel < lowestLevel) {
+          lowestLevel = weaponLevel;
+          lowestLevelWeapon = weaponKey;
+        }
+      });
+      
+      this.currentWeapon = lowestLevelWeapon;
+    } else {
+      console.warn('No weapons available!');
+    }
+    
+    console.log('Configured weapons:', this.weapons);
+    console.log('Current weapon:', this.currentWeapon);
   }
 } 
