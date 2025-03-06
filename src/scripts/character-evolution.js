@@ -6,6 +6,7 @@ require('dotenv').config(); // Load environment variables from .env file
 
 // Configuration
 const GITHUB_USERNAME = 'potnoodledev';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const COMMIT_CHECK_INTERVAL = 60 * 60 * 1000; // Check every hour (in milliseconds)
 const COMMIT_HISTORY_FILE = path.join(__dirname, '../../commit-history.json');
 const ASSETS_HISTORY_FILE = path.join(__dirname, '../../src/assets/commit-history.json');
@@ -47,12 +48,25 @@ copyCommitHistoryToAssets();
  */
 const getLatestCommitsByUser = async () => {
   try {
+    // First try to get user info to verify token works
+    await axios.get('https://api.github.com/user', {
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+      },
+    });
+
+    // Then search for commits across all repositories
     const response = await axios.get(
-      `https://api.github.com/search/commits`,
+      'https://api.github.com/search/commits',
       {
-        params: { q: `author:${GITHUB_USERNAME}` },
+        params: {
+          q: `author:${GITHUB_USERNAME}`,
+          sort: 'author-date',
+          order: 'desc'
+        },
         headers: {
-          Accept: 'application/vnd.github.cloak-preview',
+          Accept: 'application/vnd.github.cloak-preview+json',
+          Authorization: `token ${GITHUB_TOKEN}`,
         },
       }
     );
@@ -282,7 +296,7 @@ const checkForEvolution = async () => {
       // Count new commits
       const newCommits = commits.filter(commit => 
         !lastCheckedCommit || 
-        new Date(commit.commit.author.date) > new Date(historyData.lastCheckedDate || 0)
+        new Date(commit.author.date) > new Date(historyData.lastCheckedDate || 0)
       );
       
       const updatedTotalCommits = totalCommits + newCommits.length;
@@ -322,7 +336,7 @@ const checkForEvolution = async () => {
             level: level,
             commitSha: commit.sha,
             commitMessage: commit.commit.message.split('\n')[0], // First line of commit message
-            commitDate: commit.commit.author.date,
+            commitDate: commit.author.date,
             previousDescription: level === evolutionLevel + 1 ? currentCharacterDescription : newEvolutions[newEvolutions.length - 1].newDescription,
             prompt: evolutionResult.prompt,
             newDescription: evolutionResult.description
