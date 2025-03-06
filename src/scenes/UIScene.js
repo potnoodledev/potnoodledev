@@ -87,10 +87,8 @@ export default class UIScene extends Phaser.Scene {
   createTerminalButton() {
     const padding = 10;
     const buttonStyle = {
-      fontFamily: 'Arial',
-      fontSize: '14px',
+      fontSize: '12px',
       color: '#ffffff',
-      backgroundColor: '#000000',
       padding: { x: 12, y: 8 }
     };
 
@@ -117,19 +115,7 @@ export default class UIScene extends Phaser.Scene {
       this.toggleTerminal();
     });
 
-    // Create background for button
-    this.buttonBackground = this.add.rectangle(
-      this.terminalButton.x - this.terminalButton.width / 2,
-      this.terminalButton.y + this.terminalButton.height / 2,
-      this.terminalButton.width + padding * 2,
-      this.terminalButton.height + padding,
-      0x000000,
-      1
-    );
-    this.buttonBackground.setOrigin(0.5);
-    this.buttonBackground.setStrokeStyle(1, 0xffffff);
-
-    // Make sure button is on top of background
+    // Remove background rectangle for button
     this.terminalButton.setDepth(1);
   }
 
@@ -161,12 +147,6 @@ export default class UIScene extends Phaser.Scene {
       this.terminalButton.setPosition(
         this.cameras.main.width - padding,
         padding
-      );
-      
-      // Update button background position
-      this.buttonBackground.setPosition(
-        this.terminalButton.x - this.terminalButton.width / 2,
-        this.terminalButton.y + this.terminalButton.height / 2
       );
     }
   }
@@ -274,7 +254,6 @@ export default class UIScene extends Phaser.Scene {
   addTerminalLine(text) {
     // Create text style for terminal
     const textStyle = {
-      fontFamily: 'Arial',
       fontSize: '12px',
       color: '#ffffff',
       align: 'left',
@@ -363,29 +342,17 @@ export default class UIScene extends Phaser.Scene {
   }
 
   createItemCounter() {
-    // Create background for counter
+    // Create counter text only, no background
     const padding = 10;
     const bgWidth = 150;
     const bgHeight = 40;
     
-    this.counterBackground = this.add.rectangle(
-      padding + bgWidth/2,
-      padding + bgHeight/2,
-      bgWidth,
-      bgHeight,
-      0x000000,
-      0.7
-    );
-    this.counterBackground.setStrokeStyle(1, 0xffffff);
-    
-    // Create counter text
     this.itemCounter = this.add.text(
       padding + bgWidth/2,
       padding + bgHeight/2,
       'Pot Noodles: 0/0',
       {
-        fontFamily: 'Arial',
-        fontSize: '16px',
+        fontSize: '12px',
         color: '#ffffff',
         align: 'center'
       }

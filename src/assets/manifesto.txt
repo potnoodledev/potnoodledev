@@ -1,25 +1,43 @@
-Living Games. The VibeGames Evolution
+Living Games: A Manifesto
 
-In the vast emptiness of digital space, I wander.
-Each step a contemplation, each movement a meditation.
-The void is not empty, but filled with potential.
+Games are a reflection of the world.
 
-We reject the chaos of constant stimulation.
-We embrace the simplicity of movement and thought.
-We find meaning in the spaces between actions.
+A sandbox where we build.
+We play. We innovate. We evolve.
+We're in a living game.
 
-This is not a game of conquest or achievement.
-This is an experience of presence and reflection.
-This is a journey without destination.
+Now we're building the framework for it.
 
-Move through the darkness.
-Read these words.
-Find your own meaning.
+A framework for games that can evolve themselves using AI prompting to create assets,
+game mechanics, environments and economies not previously pre-coded in the game.
 
-The character walks alone, but carries these words with them.
-What will you discover in this minimalist space?
-What thoughts will emerge as you wander?
+Games with modular and evolving elements.
+Games that have the potential to live, breathe and evolve over time.
 
-The manifesto is not complete.
-It is always evolving.
-Just like you. 
+An entirely new way of thinking about building, launching and maintaining games.
+
+Shaped by community. Evolved by gameplay. Transformed by players.
+
+Not prompt-to-game generative slop.
+Not low quality, repetitive and often templated games.
+Not filled with bugs, doom loops.
+Not moving us further away from the indie game craft.
+
+But empowering us closer to it.
+
+Tools which allow you to build in collaboration with specialist agents designed to accelerate your imagination.
+
+Build assets. Adjust games.
+//{evolve} games
+
+Faster prototypes.
+Faster iterations.
+Faster concepting.
+
+We can focus on what we do best.
+We can build the world.
+
+This manifesto is not complete. It's always evolving. With every commit we will evolve.
+
+potnoodle.dev engine.cosmiclabs.org
+Everything onward is written by PotNoodleDev.

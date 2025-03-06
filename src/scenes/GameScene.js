@@ -21,7 +21,7 @@ export default class GameScene extends Phaser.Scene {
     
     // Map settings
     this.mapWidth = 1600;
-    this.mapHeight = 1200;
+    this.mapHeight = 2000;
     
     // Evolution history
     this.evolutionHistory = [];
@@ -63,7 +63,7 @@ export default class GameScene extends Phaser.Scene {
     this.createManifestoWorld();
     
     // Create player
-    this.player = this.physics.add.sprite(this.mapWidth / 2, 200, 'player');
+    this.player = this.physics.add.sprite(this.mapWidth / 2, 250, 'player');
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(10);
     
@@ -87,6 +87,22 @@ export default class GameScene extends Phaser.Scene {
     
     // Initialize items group
     this.items = this.physics.add.group();
+    
+    // Add evolution description text (will be updated when commit history loads)
+    this.evolutionText = this.add.text(
+      this.cameras.main.width - 30,
+      this.cameras.main.height - 60,
+      '',
+      {
+        fontSize: '12px',
+        color: '#aaaaaa',
+        align: 'right',
+        wordWrap: { width: 300 }
+      }
+    );
+    this.evolutionText.setScrollFactor(0);
+    this.evolutionText.setOrigin(1, 1);
+    this.evolutionText.setDepth(100);
     
     // Load commit history and character evolution data
     this.loadCommitHistory();
@@ -126,23 +142,23 @@ export default class GameScene extends Phaser.Scene {
     lines.forEach((line, index) => {
       // Skip empty lines but add spacing
       if (line.trim() === '') {
-        yPosition += 40;
+        yPosition += 30; // Reduced from 40
         return;
       }
       
       // Create text object
       const textStyle = {
         fontFamily: 'Arial',
-        fontSize: '24px',
+        fontSize: '20px',
         color: '#ffffff',
         align: 'center'
       };
       
       // Make title larger
       if (index === 0) {
-        textStyle.fontSize = '48px';
+        textStyle.fontSize = '36px';
         textStyle.fontStyle = 'bold';
-        yPosition += 20; // Extra space before title
+        yPosition += 15; // Reduced from 20
       }
       
       const textObject = this.add.text(centerX, yPosition, line, textStyle);
@@ -152,22 +168,36 @@ export default class GameScene extends Phaser.Scene {
       this.textObjects.push(textObject);
       
       // Increment y position for next line
-      yPosition += 60; // Larger spacing for better readability in the world
+      yPosition += 35; // Reduced from 45
     });
     
     // Add instructions at the top
     const instructionText = this.add.text(
       centerX, 
       100, 
-      "Use WASD or touch to move and explore the manifesto", 
+      "This is a living game.\nUse WASD or touch to move.\nExplore the manifesto.\nWith every commit PotNoodleDev will evolve.", 
       {
-        fontFamily: 'Arial',
-        fontSize: '20px',
+        fontSize: '12px',
         color: '#aaaaaa',
-        align: 'center'
+        align: 'center',
+        lineSpacing: 5,
+        wordWrap: { 
+          width: 400,
+          useAdvancedWrap: true 
+        }
       }
     );
     instructionText.setOrigin(0.5, 0);
+
+    // Calculate total height needed and update map bounds
+    const lastTextObject = this.textObjects[this.textObjects.length - 1];
+    const totalTextHeight = lastTextObject.y + lastTextObject.height;
+    // Add padding at the bottom
+    this.mapHeight = totalTextHeight + 300;
+    
+    // Update physics and camera bounds
+    this.physics.world.setBounds(0, 0, this.mapWidth, this.mapHeight);
+    this.cameras.main.setBounds(0, 0, this.mapWidth, this.mapHeight);
   }
   
   setupJoystick() {
@@ -303,6 +333,11 @@ export default class GameScene extends Phaser.Scene {
             this.game.events.emit('terminal-message', "-------------------");
           });
         }
+
+        // Update evolution text with current description from commit history
+        if (this.evolutionText) {
+          this.evolutionText.setText(`Current evolution: ${currentCharacterDescription}`);
+        }
       } else {
         // When no commit history, emit 0 commits
         this.game.events.emit('update-commit-count', 0);
@@ -311,6 +346,11 @@ export default class GameScene extends Phaser.Scene {
         this.game.events.emit('terminal-message', "Character: simple wanderer with plain clothes");
         this.game.events.emit('terminal-message', `Next evolution: 1 more commit`);
         this.game.events.emit('terminal-message', `Evolution type: Subtle, gradual changes`);
+
+        // Update evolution text
+        if (this.evolutionText) {
+          this.evolutionText.setText('Current evolution: Loading...');
+        }
       }
       
     } catch (error) {
