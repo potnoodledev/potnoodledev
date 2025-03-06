@@ -201,6 +201,30 @@ To deploy the game to itch.io (requires Butler):
 npm run deploy
 ```
 
+## AI-Powered Character Evolution
+
+This project includes an AI-powered character evolution system that automatically improves your game character based on GitHub commits. Each time the specified GitHub user (potnoodledev) makes new commits, the character evolves to become more powerful and visually distinctive.
+
+### How It Works
+
+1. The system checks for new commits by potnoodledev
+2. Every 3 commits triggers a character evolution
+3. Claude AI generates a creative, improved character description
+4. The asset generator creates new character sprites and animations
+5. The game automatically uses the new character when restarted
+
+### Using the Evolution System
+
+```bash
+# Start the continuous evolution system (checks hourly)
+npm run evolve-character
+
+# Manually trigger an evolution check
+npm run check-evolution
+```
+
+For more details, see the [Character Evolution README](src/scripts/README_EVOLUTION.md).
+
 ## Technologies Used
 
 - [Phaser 3](https://phaser.io/phaser3) - HTML5 game framework

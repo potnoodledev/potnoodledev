@@ -4,12 +4,19 @@
   "description": "A top-down action survival game where the player needs to survive for 10 minutes against progressively stronger waves of enemies.",
   "main": "index.js",
   "scripts": {
+    "prestart": "node copy-commit-history.js",
     "start": "webpack serve --open",
     "build": "webpack --mode production",
     "test": "echo \"Error: no test specified\" && exit 1",
     "deploy": "npm run build && butler push dist potnoodledev/evolve:html5",
     "fetch-comments": "node src/scripts/fetchComments.js",
-    "fetch-comments-advanced": "node src/scripts/advancedCommentFetcher.js"
+    "fetch-comments-advanced": "node src/scripts/advancedCommentFetcher.js",
+    "evolve-character": "node evolve-character.js",
+    "check-evolution": "node check-evolution.js",
+    "generate-character": "node generate-character.js",
+    "copy-history": "node copy-commit-history.js",
+    "reset-evolution": "node reset-evolution.js",
+    "force-evolution": "node force-evolution.js"
   },
   "keywords": [
     "game",
@@ -21,6 +28,7 @@
   "dependencies": {
     "axios": "^1.6.7",
     "cheerio": "^1.0.0-rc.12",
+    "dotenv": "^16.3.1",
     "phaser": "^3.60.0"
   },
   "devDependencies": {

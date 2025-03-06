@@ -4,269 +4,398 @@ export default class UIScene extends Phaser.Scene {
   constructor() {
     super('UIScene');
     
-    // UI elements
-    this.healthBar = null;
-    this.xpBar = null;
-    this.timerText = null;
-    this.levelText = null;
-    this.waveText = null;
-    this.weaponIcon = null;
-    this.weaponText = null;
+    // Terminal display properties
+    this.terminal = null;
+    this.terminalLines = [];
+    this.maxTerminalLines = 25;
+    this.terminalWidth = 400;
+    this.lineHeight = 20;
+    this.terminalScrollPosition = 0;
+    this.terminalScrollMax = 0;
+    this.isTerminalVisible = false;
+    this.totalCommits = 0;
+    this.terminalHeight = 0;
     
-    // UI style constants
-    this.styles = {
-      boxFill: 0x000000,
-      boxOutlineWidth: 2,
-      boxOutlineColor: 0xffffff,
-      textSize: '12px',
-      textColor: '#ffffff',
-      headerTextSize: '14px',
-      headerTextColor: '#ffffff'
+    // Content area properties
+    this.contentPadding = {
+      top: 40,    // Space below header
+      bottom: 30, // Space above help text
+      left: 10,
+      right: 10
     };
+
+    // Item counter properties
+    this.itemCounter = null;
+    this.itemsCollected = 0;
+    this.totalItems = 0;
   }
 
   create() {
-    // Get reference to the game scene
-    this.gameScene = this.scene.get('GameScene');
+    // Create terminal display (initially hidden)
+    this.createTerminalDisplay();
     
-    // Create UI container
-    this.createUIContainer();
-    
-    // Create health bar
-    this.createHealthBar();
-    
-    // Create XP bar
-    this.createXPBar();
-    
-    // Create timer
-    this.createTimer();
-    
-    // Create level display
-    this.createLevelDisplay();
-    
-    // Create wave display
-    this.createWaveDisplay();
-    
-    // Create weapon display
-    this.createWeaponDisplay();
-    
-    // Listen for events from the game scene
-    this.gameScene.events.on('update-player-health', this.updateHealthBar, this);
-    this.gameScene.events.on('update-player-xp', this.updateXPBar, this);
-    this.gameScene.events.on('update-player-level', this.updateLevelDisplay, this);
-    this.gameScene.events.on('update-game-time', this.updateTimer, this);
-    this.gameScene.events.on('update-wave', this.updateWaveDisplay, this);
-    this.gameScene.events.on('update-weapon', this.updateWeaponDisplay, this);
-  }
+    // Create the terminal toggle button
+    this.createTerminalButton();
 
-  createUIContainer() {
-    // Create a container for all UI elements
-    this.uiContainer = this.add.container(0, 0);
-    this.uiContainer.setDepth(100);
-    this.uiContainer.setScrollFactor(0);
-  }
+    // Create item counter
+    this.createItemCounter();
+    
+    // Listen for resize events to adjust UI
+    this.scale.on('resize', this.resize, this);
+    
+    // Listen for terminal messages from GameScene
+    this.game.events.on('terminal-message', this.addTerminalLine, this);
 
-  // Helper method to create a styled box with outline
-  createStyledBox(x, y, width, height, originX = 0, originY = 0) {
-    // Create pure black box background with higher alpha
-    const box = this.add.rectangle(x, y, width, height, 0x000000, 1);
-    box.setOrigin(originX, originY);
-    
-    // Create white outline
-    const outline = this.add.rectangle(x, y, width + this.styles.boxOutlineWidth, height + this.styles.boxOutlineWidth, this.styles.boxOutlineColor, 1);
-    outline.setOrigin(originX, originY);
-    outline.setStrokeStyle(this.styles.boxOutlineWidth, this.styles.boxOutlineColor);
-    
-    // Add both to UI container
-    this.uiContainer.add(outline);
-    this.uiContainer.add(box);
-    
-    return box;
-  }
-
-  createHealthBar() {
-    // Create health bar container with outline - pure black
-    const healthBarBox = this.createStyledBox(20, 20, 200, 30);
-    
-    // Create health bar fill
-    this.healthBar = this.add.rectangle(24, 24, 192, 22, 0xff0000, 1);
-    this.healthBar.setOrigin(0, 0);
-    
-    // Create health text
-    this.healthText = this.add.text(120, 35, 'Health', {
-      font: this.styles.textSize + ' Arial',
-      fill: this.styles.textColor
+    // Reset counter when game starts
+    this.game.events.on('reset-counter', (total) => {
+      this.itemsCollected = 0;
+      this.totalItems = total;
+      this.updateItemCounter();
     });
-    this.healthText.setOrigin(0.5, 0.5);
-    
-    // Add to UI container
-    this.uiContainer.add(this.healthBar);
-    this.uiContainer.add(this.healthText);
-  }
 
-  createXPBar() {
-    // Create XP bar container with outline - pure black
-    const xpBarBox = this.createStyledBox(20, 60, 200, 30);
-    
-    // Create XP bar fill
-    this.xpBar = this.add.rectangle(24, 64, 192, 22, 0x9b59b6, 1);
-    this.xpBar.setOrigin(0, 0);
-    
-    // Create XP text
-    this.xpText = this.add.text(120, 75, 'XP', {
-      font: this.styles.textSize + ' Arial',
-      fill: this.styles.textColor
+    // Increment counter when item is collected
+    this.game.events.on('increment-counter', () => {
+      this.itemsCollected++;
+      this.updateItemCounter();
     });
-    this.xpText.setOrigin(0.5, 0.5);
-    
-    // Add to UI container
-    this.uiContainer.add(this.xpBar);
-    this.uiContainer.add(this.xpText);
-  }
 
-  createTimer() {
-    // Create timer container with outline - pure black
-    const timerBox = this.createStyledBox(this.cameras.main.width / 2, 20, 150, 30, 0.5, 0);
-    
-    // Create timer text
-    this.timerText = this.add.text(this.cameras.main.width / 2, 35, '00:00', {
-      font: this.styles.headerTextSize + ' Arial',
-      fill: this.styles.headerTextColor
+    // Listen for commit count updates (just for the button)
+    this.game.events.on('update-commit-count', (count) => {
+      this.totalCommits = count;
+      this.updateButtonText();
     });
-    this.timerText.setOrigin(0.5, 0.5);
     
-    // Add to UI container
-    this.uiContainer.add(this.timerText);
-  }
-
-  createLevelDisplay() {
-    // Create level container with outline - pure black
-    const levelBox = this.createStyledBox(this.cameras.main.width - 20, 20, 100, 30, 1, 0);
-    
-    // Create level text
-    this.levelText = this.add.text(this.cameras.main.width - 70, 35, 'Level: 1', {
-      font: this.styles.textSize + ' Arial',
-      fill: this.styles.textColor
+    // Add keyboard event for scrolling terminal
+    this.input.keyboard.on('keydown-UP', () => {
+      if (this.isTerminalVisible) {
+        this.scrollTerminal(-1);
+      }
     });
-    this.levelText.setOrigin(0.5, 0.5);
     
-    // Add to UI container
-    this.uiContainer.add(this.levelText);
-  }
-
-  createWaveDisplay() {
-    // Create wave container with outline - pure black
-    const waveBox = this.createStyledBox(this.cameras.main.width - 20, 60, 100, 30, 1, 0);
-    
-    // Create wave text
-    this.waveText = this.add.text(this.cameras.main.width - 70, 75, 'Wave: 1', {
-      font: this.styles.textSize + ' Arial',
-      fill: this.styles.textColor
+    this.input.keyboard.on('keydown-DOWN', () => {
+      if (this.isTerminalVisible) {
+        this.scrollTerminal(1);
+      }
     });
-    this.waveText.setOrigin(0.5, 0.5);
-    
-    // Add to UI container
-    this.uiContainer.add(this.waveText);
-  }
 
-  createWeaponDisplay() {
-    // Create weapon container with outline - pure black
-    const weaponBox = this.createStyledBox(20, this.cameras.main.height - 20, 80, 80, 0, 1);
-    
-    // Create weapon icon
-    this.weaponIcon = this.add.image(60, this.cameras.main.height - 60, 'rock');
-    this.weaponIcon.setScale(1.8);
-    
-    // Create weapon text
-    this.weaponText = this.add.text(60, this.cameras.main.height - 25, 'Rock', {
-      font: this.styles.textSize + ' Arial',
-      fill: this.styles.textColor
+    // Add keyboard shortcut for toggling terminal (ESC key)
+    this.input.keyboard.on('keydown-ESC', () => {
+      this.toggleTerminal();
     });
-    this.weaponText.setOrigin(0.5, 0.5);
-    
-    // Add to UI container
-    this.uiContainer.add(this.weaponIcon);
-    this.uiContainer.add(this.weaponText);
   }
 
-  updateHealthBar(currentHealth, maxHealth) {
-    // Update health bar width
-    const healthPercent = Math.max(0, currentHealth / maxHealth);
-    this.healthBar.width = 192 * healthPercent;
+  createTerminalButton() {
+    const padding = 10;
+    const buttonStyle = {
+      fontFamily: 'Arial',
+      fontSize: '14px',
+      color: '#ffffff',
+      backgroundColor: '#000000',
+      padding: { x: 12, y: 8 }
+    };
+
+    this.terminalButton = this.add.text(
+      this.cameras.main.width - padding,
+      padding,
+      'PotNoodleDev commit | evolution history +',
+      buttonStyle
+    );
+    this.terminalButton.setOrigin(1, 0);
+    this.terminalButton.setInteractive({ useHandCursor: true });
     
-    // Update health text
-    this.healthText.setText(`${currentHealth}/${maxHealth}`);
+    // Add hover effects
+    this.terminalButton.on('pointerover', () => {
+      this.terminalButton.setStyle({ color: '#aaaaaa' });
+    });
+    
+    this.terminalButton.on('pointerout', () => {
+      this.terminalButton.setStyle({ color: '#ffffff' });
+    });
+    
+    // Add click handler
+    this.terminalButton.on('pointerdown', () => {
+      this.toggleTerminal();
+    });
+
+    // Create background for button
+    this.buttonBackground = this.add.rectangle(
+      this.terminalButton.x - this.terminalButton.width / 2,
+      this.terminalButton.y + this.terminalButton.height / 2,
+      this.terminalButton.width + padding * 2,
+      this.terminalButton.height + padding,
+      0x000000,
+      1
+    );
+    this.buttonBackground.setOrigin(0.5);
+    this.buttonBackground.setStrokeStyle(1, 0xffffff);
+
+    // Make sure button is on top of background
+    this.terminalButton.setDepth(1);
   }
 
-  updateXPBar(currentXP, maxXP) {
-    // Update XP bar width
-    const xpPercent = currentXP / maxXP;
-    this.xpBar.width = 192 * xpPercent;
-    
-    // Update XP text
-    this.xpText.setText(`${currentXP}/${maxXP}`);
+  updateButtonText() {
+    const commitText = this.totalCommits > 0 ? ` (${this.totalCommits})` : '';
+    this.terminalButton.setText(
+      this.isTerminalVisible ? 
+        `PotNoodleDev commit${commitText} | evolution history -` : 
+        `PotNoodleDev commit${commitText} | evolution history +`
+    );
   }
 
-  updateLevelDisplay(level) {
-    // Update level text
-    this.levelText.setText(`Level: ${level}`);
+  toggleTerminal() {
+    this.isTerminalVisible = !this.isTerminalVisible;
+    this.terminal.setVisible(this.isTerminalVisible);
+    this.updateButtonText();
   }
 
-  updateTimer(currentTime, maxTime) {
-    // Calculate minutes and seconds
-    const totalSeconds = Math.floor(currentTime / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    
-    // Format time string
-    const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    
-    // Update timer text
-    this.timerText.setText(timeString);
-    
-    // Calculate remaining time percentage
-    const timePercent = currentTime / maxTime;
-    
-    // Change color based on remaining time
-    if (timePercent > 0.75) {
-      this.timerText.setColor(this.styles.headerTextColor);
-    } else if (timePercent > 0.5) {
-      this.timerText.setColor('#ffff00');
-    } else if (timePercent > 0.25) {
-      this.timerText.setColor('#ffa500');
-    } else {
-      this.timerText.setColor('#ff0000');
+  resize() {
+    // Update terminal position on resize
+    if (this.terminal) {
+      const terminalX = this.cameras.main.width - this.terminalWidth - 20;
+      this.terminal.setPosition(terminalX, 60); // Move down to account for button
+    }
+
+    // Update button position
+    if (this.terminalButton) {
+      const padding = 10;
+      this.terminalButton.setPosition(
+        this.cameras.main.width - padding,
+        padding
+      );
+      
+      // Update button background position
+      this.buttonBackground.setPosition(
+        this.terminalButton.x - this.terminalButton.width / 2,
+        this.terminalButton.y + this.terminalButton.height / 2
+      );
     }
   }
 
-  updateWaveDisplay(wave) {
-    // Update wave text
-    this.waveText.setText(`Wave: ${wave}`);
+  createTerminalDisplay() {
+    // Create terminal background
+    const terminalX = this.cameras.main.width - this.terminalWidth - 20;
+    const terminalY = 60; // Move down to account for button
+    this.terminalHeight = this.cameras.main.height - 80; // Store height in class property
+    
+    // Create terminal container
+    this.terminal = this.add.container(terminalX, terminalY);
+    this.terminal.setVisible(false); // Initially hidden
+    
+    // Create terminal background with close button
+    const terminalBg = this.add.rectangle(0, 0, this.terminalWidth, this.terminalHeight, 0x000000, 0.9);
+    terminalBg.setOrigin(0, 0);
+    terminalBg.setStrokeStyle(2, 0xffffff);
+    this.terminal.add(terminalBg);
+    
+    // Create content container
+    this.contentContainer = this.add.container(this.contentPadding.left, this.contentPadding.top);
+    this.terminal.add(this.contentContainer);
+    
+    // Create content bounds for clipping
+    const bounds = new Phaser.Geom.Rectangle(
+      this.contentPadding.left,
+      this.contentPadding.top,
+      this.terminalWidth - (this.contentPadding.left + this.contentPadding.right),
+      this.terminalHeight - (this.contentPadding.top + this.contentPadding.bottom)
+    );
+    
+    // Add content container to terminal
+    this.terminal.add(this.contentContainer);
+    
+    // Create terminal header
+    const headerText = this.add.text(
+      this.terminalWidth / 2, 
+      10, 
+      "EVOLUTION TERMINAL", 
+      {
+        fontFamily: 'Arial',
+        fontSize: '16px',
+        color: '#ffffff',
+        align: 'center',
+        fontStyle: 'bold'
+      }
+    );
+    headerText.setOrigin(0.5, 0);
+    this.terminal.add(headerText);
+    
+    // Create divider line
+    const divider = this.add.graphics();
+    divider.lineStyle(1, 0xffffff, 1);
+    divider.lineBetween(10, 30, this.terminalWidth - 10, 30);
+    this.terminal.add(divider);
+    
+    // Create scroll indicators
+    this.scrollUpIndicator = this.add.text(
+      this.terminalWidth - 20,
+      35,
+      "▲",
+      {
+        fontFamily: 'Arial',
+        fontSize: '14px',
+        color: '#ffffff',
+        align: 'center'
+      }
+    );
+    this.scrollUpIndicator.setOrigin(0.5, 0);
+    this.scrollUpIndicator.setAlpha(0.5);
+    this.terminal.add(this.scrollUpIndicator);
+    
+    this.scrollDownIndicator = this.add.text(
+      this.terminalWidth - 20,
+      this.terminalHeight - 20,
+      "▼",
+      {
+        fontFamily: 'Arial',
+        fontSize: '14px',
+        color: '#ffffff',
+        align: 'center'
+      }
+    );
+    this.scrollDownIndicator.setOrigin(0.5, 1);
+    this.scrollDownIndicator.setAlpha(0.5);
+    this.terminal.add(this.scrollDownIndicator);
+    
+    // Add help text
+    const helpText = this.add.text(
+      10,
+      this.terminalHeight - 20,
+      "UP/DOWN: Scroll | ESC: Toggle",
+      {
+        fontFamily: 'Arial',
+        fontSize: '10px',
+        color: '#ffffff',
+        align: 'left'
+      }
+    );
+    helpText.setOrigin(0, 1);
+    this.terminal.add(helpText);
   }
 
-  updateWeaponDisplay(weapon) {
-    // Get the GameScene to access weapon configurations
-    const gameScene = this.scene.get('GameScene');
+  addTerminalLine(text) {
+    // Create text style for terminal
+    const textStyle = {
+      fontFamily: 'Arial',
+      fontSize: '12px',
+      color: '#ffffff',
+      align: 'left',
+      wordWrap: { 
+        width: this.terminalWidth - (this.contentPadding.left + this.contentPadding.right + 20),
+        useAdvancedWrap: true
+      }
+    };
     
-    // Update weapon icon and text based on current weapon
-    if (gameScene.weapons && gameScene.weapons[weapon]) {
-      const weaponConfig = gameScene.weapons[weapon];
-      this.weaponIcon.setTexture(weapon);
-      this.weaponText.setText(weaponConfig.name);
-      
-      // Add a tooltip with weapon stats
-      const stats = [
-        `Damage: ${weaponConfig.damage}`,
-        `Fire Rate: ${(1000 / weaponConfig.fireRate).toFixed(1)}/s`,
-        `Speed: ${weaponConfig.projectileSpeed}`
-      ];
-      
-      // Create or update tooltip (not implemented yet)
-      console.log(`Weapon stats: ${stats.join(', ')}`);
-    } else {
-      // Fallback if weapon config not found
-      this.weaponIcon.setTexture('rock');
-      this.weaponText.setText('Rock');
+    // Create text object
+    const textObject = this.add.text(0, 0, text, textStyle);
+    textObject.setOrigin(0, 0);
+    
+    // Calculate y position for new line
+    let yPosition = 0;
+    if (this.terminalLines.length > 0) {
+      const lastLine = this.terminalLines[this.terminalLines.length - 1];
+      yPosition = lastLine.y + lastLine.height + 5; // 5px spacing between lines
+    }
+    textObject.setY(yPosition);
+    
+    // Add to content container
+    this.contentContainer.add(textObject);
+    this.terminalLines.push(textObject);
+    
+    // Calculate total content height and visible area
+    const contentHeight = yPosition + textObject.height;
+    const visibleHeight = this.terminalHeight - (this.contentPadding.top + this.contentPadding.bottom);
+    
+    // Update max scroll position
+    this.terminalScrollMax = Math.max(0, Math.floor((contentHeight - visibleHeight) / this.lineHeight));
+    
+    // Auto-scroll to bottom when new content is added
+    if (this.terminalScrollMax > 0) {
+      this.terminalScrollPosition = this.terminalScrollMax;
+      this.updateTerminalScroll();
+    }
+    
+    return textObject;
+  }
+  
+  scrollTerminal(direction) {
+    // Update scroll position
+    this.terminalScrollPosition = Phaser.Math.Clamp(
+      this.terminalScrollPosition + direction,
+      0,
+      this.terminalScrollMax
+    );
+    
+    // Update terminal display
+    this.updateTerminalScroll();
+  }
+  
+  updateTerminalScroll() {
+    // Calculate scroll offset
+    const scrollOffset = this.terminalScrollPosition * this.lineHeight;
+    
+    // Update content container position
+    this.contentContainer.setY(this.contentPadding.top - scrollOffset);
+    
+    // Hide lines that are outside the visible area
+    const visibleHeight = this.cameras.main.height - 80 - (this.contentPadding.top + this.contentPadding.bottom);
+    const startY = scrollOffset;
+    const endY = startY + visibleHeight;
+    
+    this.terminalLines.forEach(line => {
+      const lineY = line.y + this.contentContainer.y;
+      line.setVisible(lineY >= this.contentPadding.top - line.height && lineY <= visibleHeight);
+    });
+    
+    // Update scroll indicators
+    this.scrollUpIndicator.setAlpha(this.terminalScrollPosition > 0 ? 1 : 0.3);
+    this.scrollDownIndicator.setAlpha(this.terminalScrollPosition < this.terminalScrollMax ? 1 : 0.3);
+  }
+  
+  clearTerminal() {
+    // Remove all terminal lines
+    this.terminalLines.forEach(line => {
+      line.destroy();
+    });
+    this.terminalLines = [];
+    
+    // Reset scroll position
+    this.terminalScrollPosition = 0;
+    this.terminalScrollMax = 0;
+  }
+
+  createItemCounter() {
+    // Create background for counter
+    const padding = 10;
+    const bgWidth = 150;
+    const bgHeight = 40;
+    
+    this.counterBackground = this.add.rectangle(
+      padding + bgWidth/2,
+      padding + bgHeight/2,
+      bgWidth,
+      bgHeight,
+      0x000000,
+      0.7
+    );
+    this.counterBackground.setStrokeStyle(1, 0xffffff);
+    
+    // Create counter text
+    this.itemCounter = this.add.text(
+      padding + bgWidth/2,
+      padding + bgHeight/2,
+      'Pot Noodles: 0/0',
+      {
+        fontFamily: 'Arial',
+        fontSize: '16px',
+        color: '#ffffff',
+        align: 'center'
+      }
+    );
+    this.itemCounter.setOrigin(0.5);
+  }
+
+  updateItemCounter() {
+    if (this.itemCounter) {
+      this.itemCounter.setText(`Pot Noodles: ${this.itemsCollected}/${this.totalItems}`);
     }
   }
 } 
