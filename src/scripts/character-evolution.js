@@ -1,8 +1,9 @@
-const axios = require('axios');
-const { exec } = require('child_process');
+require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config(); // Load environment variables from .env file
+const axios = require('axios');
+const { exec } = require('child_process');
+const { Anthropic } = require('@anthropic-ai/sdk');
 
 // Configuration
 const GITHUB_USERNAME = 'potnoodledev';
@@ -10,6 +11,7 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const COMMIT_CHECK_INTERVAL = 60 * 60 * 1000; // Check every hour (in milliseconds)
 const COMMIT_HISTORY_FILE = path.join(__dirname, '../../commit-history.json');
 const ASSETS_HISTORY_FILE = path.join(__dirname, '../../src/assets/commit-history.json');
+const MANIFESTO_FILE = path.join(__dirname, '../../src/assets/manifesto.txt');
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const COMMITS_PER_EVOLUTION = 1; // Changed from 3 to 1 - evolve at every commit
 
@@ -266,6 +268,70 @@ const resetEvolutionHistory = async () => {
 };
 
 /**
+ * Generate a new manifesto line based on the current manifesto content
+ */
+const generateManifestoLine = async () => {
+  try {
+    // Read current manifesto
+    const manifestoContent = fs.readFileSync(MANIFESTO_FILE, 'utf8');
+
+    const anthropic = new Anthropic({
+      apiKey: ANTHROPIC_API_KEY,
+    });
+
+    const prompt = `You are a creative AI assistant helping to evolve a living game manifesto that grows organically. Your task is to add EXACTLY ONE powerful line that continues the manifesto's flow, unless the thought absolutely requires a second or third line to complete it naturally. Bias heavily towards using just one or two lines.
+
+Current manifesto content:
+${manifestoContent}
+
+Please generate 1-3 NEW LINES that continue this manifesto, with a strong preference for fewer lines. The lines should:
+1. Flow naturally from the previous content, especially the last few lines
+2. Feel like they were written in the same voice and style
+3. Use similar poetic rhythm and tone
+4. Build upon the manifesto's core themes:
+   - Living, evolving games
+   - AI-enhanced game development
+   - Community-driven evolution
+   - The fusion of human creativity and AI assistance
+5. Each line should be concise (max 100 characters)
+6. Not repeat existing ideas or phrases
+
+Important guidelines:
+- START WITH ONE LINE. Only add more if absolutely necessary to complete the thought
+- Prefer powerful single lines that stand alone
+- A second or third line should only be added if it significantly enhances the message
+- Read the last few lines carefully to maintain the flow
+- Match the writing style and tone exactly
+- If using multiple lines, make them flow together as a single thought
+- If the previous lines use metaphors, continue with related imagery
+- If the previous lines are direct statements, maintain that approach
+- The lines should feel like they were written by the same author
+- Consider this a continuous piece of writing, not standalone lines
+
+Return ONLY the new line(s), with each line on its own line. No explanations or additional text.`;
+
+    const message = await anthropic.messages.create({
+      model: "claude-3-opus-20240229",
+      max_tokens: 250,
+      temperature: 1.0,
+      messages: [{ role: "user", content: prompt }]
+    });
+
+    const newLines = message.content[0].text.trim();
+    console.log('Generated new manifesto lines:', newLines);
+
+    // Append the new lines to the manifesto with ONE extra line break
+    fs.appendFileSync(MANIFESTO_FILE, '\n' + newLines + '\n');
+    console.log('Added new lines to manifesto');
+
+    return newLines;
+  } catch (error) {
+    console.error('Error generating manifesto line:', error);
+    return null;
+  }
+};
+
+/**
  * Check for new commits and evolve the character if needed
  */
 const checkForEvolution = async () => {
@@ -312,6 +378,9 @@ const checkForEvolution = async () => {
           currentLevel - 1
         );
 
+        // Generate new manifesto line based only on the manifesto content
+        const newManifestoLine = await generateManifestoLine();
+
         // Store evolution details
         newEvolutions.push({
           level: currentLevel,
@@ -320,7 +389,8 @@ const checkForEvolution = async () => {
           commitDate: commit.commit.author.date,
           previousDescription: currentDesc,
           prompt: evolutionResult.prompt,
-          newDescription: evolutionResult.description
+          newDescription: evolutionResult.description,
+          manifestoLine: newManifestoLine
         });
 
         currentDesc = evolutionResult.description;

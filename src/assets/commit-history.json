@@ -1,9 +1,9 @@
 {
-  "lastCheckedCommit": "61abbb258bcdb9e0a4e5c565c99e4b6425442d27",
-  "lastCheckedDate": "2025-03-06T13:56:16.041Z",
-  "currentCharacterDescription": "Explorer facing right, noodle-spiked shoulder armor, broth-dripping trident, wisps of steaming broth behind.",
-  "evolutionLevel": 10,
-  "totalCommits": 10,
+  "lastCheckedCommit": "702438645a631b9df717f1479712264bd7ffd347",
+  "lastCheckedDate": "2025-03-06T16:56:25.353Z",
+  "currentCharacterDescription": "Explorer facing right, noodle-spiked shoulder armor, broth-dripping trident, swirling noodle aura.",
+  "evolutionLevel": 11,
+  "totalCommits": 11,
   "evolutionHistory": [
     {
       "level": 1,
@@ -94,6 +94,15 @@
       "previousDescription": "Explorer facing right, noodle-spiked shoulder armor, noodly trident, wisps of broth rising",
       "prompt": "You are a creative game character designer specializing in pot noodle-themed characters. I have a pixel art character in my game described as: \"Explorer facing right, noodle-spiked shoulder armor, noodly trident, wisps of broth rising\".\n\nThis character is at evolution level 9 and has just evolved to level 10.\n\nPlease create an IMPROVED description that builds upon the current character. The improvement should be clear and drawable in pixel art style.\n\nThe character description MUST follow this structure:\n1. Character type and basic pose (e.g., \"Explorer facing right\")\n2. Main clothing/armor (maximum 2 items)\n3. ONE primary tool or weapon\n4. ONE special effect or aura (if any)\n\nKeep in mind:\n- Descriptions must be simple enough to draw in 32x32 pixel art\n- Each element should be clearly visible from a top-down view\n- Avoid overlapping or complex layered effects\n- Limit particle effects and floating elements\n- Keep color descriptions simple and clear\n\nExamples of good elements:\n- \"Pot noodle backpack with steam vent\"\n- \"Noodle-woven cloak\"\n- \"Glowing wooden spoon\"\n- \"Simple steam aura\"\n\nThe description should:\n1. Be very concise (20 words or less)\n2. Use simple, clear visual elements\n3. Add only ONE new feature compared to the previous form\n4. Keep the character instantly recognizable\n5. IMPORTANT: The character must be facing RIGHT\n6. Focus on elements that work in pixel art\n\nONLY respond with the new character description text, nothing else. No explanations, no intro text, just the description.",
       "newDescription": "Explorer facing right, noodle-spiked shoulder armor, broth-dripping trident, wisps of steaming broth behind."
+    },
+    {
+      "level": 11,
+      "commitSha": "702438645a631b9df717f1479712264bd7ffd347",
+      "commitMessage": "player updated",
+      "commitDate": "2025-03-06T21:11:37.000+05:30",
+      "previousDescription": "Explorer facing right, noodle-spiked shoulder armor, broth-dripping trident, wisps of steaming broth behind.",
+      "prompt": "You are a creative game character designer specializing in pot noodle-themed characters. I have a pixel art character in my game described as: \"Explorer facing right, noodle-spiked shoulder armor, broth-dripping trident, wisps of steaming broth behind.\".\n\nThis character is at evolution level 10 and has just evolved to level 11.\n\nPlease create an IMPROVED description that builds upon the current character. The improvement should be clear and drawable in pixel art style.\n\nThe character description MUST follow this structure:\n1. Character type and basic pose (e.g., \"Explorer facing right\")\n2. Main clothing/armor (maximum 2 items)\n3. ONE primary tool or weapon\n4. ONE special effect or aura (if any)\n\nKeep in mind:\n- Descriptions must be simple enough to draw in 32x32 pixel art\n- Each element should be clearly visible from a top-down view\n- Avoid overlapping or complex layered effects\n- Limit particle effects and floating elements\n- Keep color descriptions simple and clear\n\nExamples of good elements:\n- \"Pot noodle backpack with steam vent\"\n- \"Noodle-woven cloak\"\n- \"Glowing wooden spoon\"\n- \"Simple steam aura\"\n\nThe description should:\n1. Be very concise (20 words or less)\n2. Use simple, clear visual elements\n3. Add only ONE new feature compared to the previous form\n4. Keep the character instantly recognizable\n5. IMPORTANT: The character must be facing RIGHT\n6. Focus on elements that work in pixel art\n\nONLY respond with the new character description text, nothing else. No explanations, no intro text, just the description.",
+      "newDescription": "Explorer facing right, noodle-spiked shoulder armor, broth-dripping trident, swirling noodle aura."
     }
   ]
 }

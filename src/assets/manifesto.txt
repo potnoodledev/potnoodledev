@@ -41,3 +41,4 @@ This manifesto is not complete. It's always evolving. With every commit we will 
 
 potnoodle.dev engine.cosmiclabs.org
 Everything onward is written by PotNoodleDev.
+
