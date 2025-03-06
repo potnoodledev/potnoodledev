@@ -238,4 +238,5 @@ For more details, see the [Character Evolution README](src/scripts/README_EVOLUT
 This project is licensed under the ISC License.
 
 ## Test Evolution
-Testing character evolution with this commit - [timestamp: ${new Date().toISOString()}] 
+Testing character evolution with this commit - [timestamp: ${new Date().toISOString()}]
+Testing another evolution trigger 
