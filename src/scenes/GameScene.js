@@ -52,6 +52,9 @@ export default class GameScene extends Phaser.Scene {
     // Set background to black
     this.cameras.main.setBackgroundColor('#000000');
     
+    // Create background assets
+    this.createBackgroundAssets();
+    
     // Load manifesto text
     this.manifestoText = this.cache.text.get('manifesto');
     this.manifestoLines = this.manifestoText.split('\n');
@@ -163,6 +166,7 @@ export default class GameScene extends Phaser.Scene {
       
       const textObject = this.add.text(centerX, yPosition, line, textStyle);
       textObject.setOrigin(0.5, 0);
+      textObject.setDepth(5); // Set text above background assets
       
       // Store reference to text object
       this.textObjects.push(textObject);
@@ -178,9 +182,11 @@ export default class GameScene extends Phaser.Scene {
       "This is a living game.\nUse WASD or touch to move.\nExplore the manifesto.\nWith every commit PotNoodleDev will evolve.", 
       {
         fontSize: '12px',
-        color: '#aaaaaa',
+        color: '#ffffff',
         align: 'center',
         lineSpacing: 5,
+        padding: { x: 10, y: 10 },
+        backgroundColor: '#000000',
         wordWrap: { 
           width: 400,
           useAdvancedWrap: true 
@@ -188,6 +194,7 @@ export default class GameScene extends Phaser.Scene {
       }
     );
     instructionText.setOrigin(0.5, 0);
+    instructionText.setDepth(5); // Set instructions above background assets
 
     // Calculate total height needed and update map bounds
     const lastTextObject = this.textObjects[this.textObjects.length - 1];
@@ -481,5 +488,102 @@ export default class GameScene extends Phaser.Scene {
         this.player.setTexture('player');
       }
     }
+  }
+
+  createBackgroundAssets() {
+    // Arrays to hold our background assets
+    const imageKeys = ['bg_potnoods', 'bg_potnoods2', 'bg_potnoods3', 'bg_potnoods4'];
+    const videoKeys = ['bg_video5', 'bg_video6', 'bg_video7'];
+
+    // Create container for background assets
+    this.backgroundContainer = this.add.container(0, 0);
+    this.backgroundContainer.setDepth(0); // Set to lowest depth
+
+    // Create a grid system for better distribution
+    const gridCols = 4;
+    const gridRows = 3;
+    const cellWidth = this.mapWidth / gridCols;
+    const cellHeight = this.mapHeight / gridRows;
+
+    // Combine all assets and shuffle them
+    const allAssets = [...imageKeys, ...videoKeys];
+    this.shuffleArray(allAssets);
+
+    // Place assets in grid cells
+    allAssets.forEach((key, index) => {
+      // Calculate grid position
+      const col = index % gridCols;
+      const row = Math.floor(index / gridCols);
+
+      // Calculate base position within the cell
+      const baseX = col * cellWidth;
+      const baseY = row * cellHeight;
+
+      // Add some random offset within the cell
+      const x = baseX + Phaser.Math.Between(100, cellWidth - 100);
+      const y = baseY + Phaser.Math.Between(100, cellHeight - 100);
+
+      if (key.includes('video')) {
+        // Add video
+        const video = this.add.video(x, y, key);
+        video.setMute(true); // Mute the video first
+        
+        // Set an initial small scale
+        video.setScale(0.5);
+        
+        // Start playing immediately and set to loop
+        video.play(true);
+        
+        // Wait for video to load before final scaling
+        video.once('loadeddata', () => {
+          // Calculate scale to achieve desired width (150-200 pixels)
+          const targetWidth = Phaser.Math.Between(150, 200);
+          const scale = targetWidth / video.width;
+          
+          // Apply scale and make sure it's not too tall
+          const targetHeight = video.height * scale;
+          if (targetHeight > 100) {
+            // If too tall, scale based on height instead
+            const heightScale = 100 / video.height;
+            video.setScale(heightScale);
+          } else {
+            video.setScale(scale);
+          }
+        });
+        
+        video.setDepth(0); // Ensure it's at the bottom
+        this.backgroundContainer.add(video);
+        
+      } else {
+        // Add image
+        const image = this.add.image(x, y, key);
+        
+        // Calculate scale to achieve desired width (250-300 pixels)
+        const targetWidth = Phaser.Math.Between(250, 300);
+        const scale = targetWidth / image.width;
+        
+        // Apply scale and make sure it's not too tall
+        const targetHeight = image.height * scale;
+        if (targetHeight > 200) {
+          // If too tall, scale based on height instead
+          const heightScale = 200 / image.height;
+          image.setScale(heightScale);
+        } else {
+          image.setScale(scale);
+        }
+        
+        image.setDepth(0); // Ensure it's at the bottom
+        this.backgroundContainer.add(image);
+      }
+    });
+  }
+
+  // Helper function to shuffle array
+  shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
   }
 } 

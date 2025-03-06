@@ -15,6 +15,17 @@ export default class BootScene extends Phaser.Scene {
 
     // Load items
     this.load.image('pot_noodle', 'assets/images/items/pot_noodle_packet.png');
+
+    // Load background images
+    this.load.image('bg_potnoods', 'assets/images/background/potnoods.png');
+    this.load.image('bg_potnoods2', 'assets/images/background/potnoods2.png');
+    this.load.image('bg_potnoods3', 'assets/images/background/potnoods3.png');
+    this.load.image('bg_potnoods4', 'assets/images/background/potnoods4.png');
+
+    // Load background videos
+    this.load.video('bg_video5', 'assets/images/background/potnoods5.mp4', 'canplay', true, false);
+    this.load.video('bg_video6', 'assets/images/background/potnoods6.mp4', 'canplay', true, false);
+    this.load.video('bg_video7', 'assets/images/background/potnoods7.mp4', 'canplay', true, false);
   }
 
   create() {
