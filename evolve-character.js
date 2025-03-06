@@ -1,16 +1,34 @@
 #!/usr/bin/env node
 
 /**
- * Character Evolution Script
+ * Character Evolution System
  * 
- * This script checks for new GitHub commits by potnoodledev and evolves
- * the game character when new commits are detected.
+ * This script starts the character evolution system that:
+ * 1. Immediately checks for any unprocessed commits
+ * 2. Then continues to check periodically (default: every hour)
+ * 
+ * You can override the check interval with an environment variable:
+ * COMMIT_CHECK_INTERVAL_MINUTES=30 node evolve-character.js
  * 
  * Run with: node evolve-character.js
  */
 
-// Import the character evolution system
-require('./src/scripts/character-evolution');
+const { checkForEvolution } = require('./src/scripts/character-evolution');
 
-console.log('Character evolution system is running...');
-console.log('Press Ctrl+C to stop'); 
+// Get check interval from environment or use default (60 minutes)
+const checkIntervalMinutes = process.env.COMMIT_CHECK_INTERVAL_MINUTES || 60;
+const checkIntervalMs = checkIntervalMinutes * 60 * 1000;
+
+console.log('Character Evolution System Starting...');
+console.log('----------------------------------------');
+console.log('1. Checking for unprocessed commits now...');
+
+// First check immediately
+checkForEvolution().then(() => {
+  console.log('----------------------------------------');
+  console.log(`2. Will check again every ${checkIntervalMinutes} minutes`);
+  console.log('Press Ctrl+C to stop');
+  
+  // Then set up periodic checks
+  setInterval(checkForEvolution, checkIntervalMs);
+}); 

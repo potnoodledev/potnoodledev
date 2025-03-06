@@ -270,117 +270,82 @@ const resetEvolutionHistory = async () => {
  */
 const checkForEvolution = async () => {
   try {
-    // Load current state
-    const historyData = JSON.parse(fs.readFileSync(COMMIT_HISTORY_FILE, 'utf8'));
-    const { 
-      lastCheckedCommit, 
-      currentCharacterDescription, 
-      evolutionLevel, 
-      totalCommits,
-      evolutionHistory = [] // Default to empty array if not present
-    } = historyData;
-    
-    // Get latest commits
+    // Get latest commits first
     const commits = await getLatestCommitsByUser();
     
     if (commits.length === 0) {
       console.log('No commits found or error fetching commits');
       return;
     }
+
+    // Load current state
+    const historyData = JSON.parse(fs.readFileSync(COMMIT_HISTORY_FILE, 'utf8'));
+    const { 
+      currentCharacterDescription, 
+      evolutionLevel,
+      evolutionHistory = [] 
+    } = historyData;
+
+    // Get all commit SHAs we've already processed
+    const processedCommits = new Set(evolutionHistory.map(e => e.commitSha));
     
-    // Get the latest commit SHA
-    const latestCommitSha = commits[0].sha;
-    
-    // If this is the first check or we have a new commit
-    if (!lastCheckedCommit || latestCommitSha !== lastCheckedCommit) {
-      // Count new commits
-      const newCommits = commits.filter(commit => 
-        !lastCheckedCommit || 
-        new Date(commit.author.date) > new Date(historyData.lastCheckedDate || 0)
-      );
-      
-      const updatedTotalCommits = totalCommits + newCommits.length;
-      
-      // Calculate new evolution level (one level per commit)
-      const newEvolutionLevel = Math.floor(updatedTotalCommits / COMMITS_PER_EVOLUTION);
-      
-      // If we've reached a new evolution level, generate a new character
-      if (newEvolutionLevel > evolutionLevel) {
-        console.log(`Evolution triggered! Level ${evolutionLevel} -> ${newEvolutionLevel}`);
-        
-        // Process each new evolution level
-        let currentDesc = currentCharacterDescription;
-        let currentLevel = evolutionLevel;
-        
-        // Store new evolutions
-        const newEvolutions = [];
-        
-        // For each new level, generate a character evolution
-        for (let level = evolutionLevel + 1; level <= newEvolutionLevel; level++) {
-          // Get the commit that triggered this evolution
-          const commitIndex = level - evolutionLevel - 1;
-          const commit = newCommits[commitIndex];
-          
-          // Use Claude to generate an improved character description
-          const evolutionResult = await generateImprovedCharacterDescription(
-            currentDesc,
-            currentLevel
-          );
-          
-          // Update current description and level for next iteration
-          currentDesc = evolutionResult.description;
-          currentLevel = level;
-          
-          // Store evolution details
-          newEvolutions.push({
-            level: level,
-            commitSha: commit.sha,
-            commitMessage: commit.commit.message.split('\n')[0], // First line of commit message
-            commitDate: commit.author.date,
-            previousDescription: level === evolutionLevel + 1 ? currentCharacterDescription : newEvolutions[newEvolutions.length - 1].newDescription,
-            prompt: evolutionResult.prompt,
-            newDescription: evolutionResult.description
-          });
-        }
-        
-        // Generate the final character
-        await generateCharacter(currentDesc);
-        
-        // Update history with new state
-        const updatedHistory = {
-          lastCheckedCommit: latestCommitSha,
-          lastCheckedDate: new Date().toISOString(),
-          currentCharacterDescription: currentDesc,
-          evolutionLevel: newEvolutionLevel,
-          totalCommits: updatedTotalCommits,
-          evolutionHistory: [...evolutionHistory, ...newEvolutions]
-        };
-        
-        fs.writeFileSync(COMMIT_HISTORY_FILE, JSON.stringify(updatedHistory, null, 2));
-        
-        // Copy to assets directory
-        copyCommitHistoryToAssets();
-        
-        console.log(`Character evolved successfully to: "${currentDesc}"`);
-      } else {
-        // Just update the last checked commit
-        const updatedHistory = {
-          ...historyData,
-          lastCheckedCommit: latestCommitSha,
-          lastCheckedDate: new Date().toISOString(),
-          totalCommits: updatedTotalCommits
-        };
-        
-        fs.writeFileSync(COMMIT_HISTORY_FILE, JSON.stringify(updatedHistory, null, 2));
-        
-        // Copy to assets directory
-        copyCommitHistoryToAssets();
-        
-        console.log(`New commits found, but not enough for evolution. ` +
-                   `Current progress: ${updatedTotalCommits % COMMITS_PER_EVOLUTION}/${COMMITS_PER_EVOLUTION} commits toward next level.`);
+    // Find new commits we haven't processed yet
+    const newCommits = commits.filter(commit => !processedCommits.has(commit.sha));
+    console.log(`Found ${newCommits.length} new commits to process`);
+
+    if (newCommits.length > 0) {
+      // Process each new commit in chronological order
+      newCommits.sort((a, b) => new Date(a.commit.author.date) - new Date(b.commit.author.date));
+
+      let currentDesc = currentCharacterDescription;
+      let currentLevel = evolutionLevel;
+      const newEvolutions = [];
+
+      // Process each new commit
+      for (const commit of newCommits) {
+        currentLevel += 1;
+        console.log(`Processing commit: ${commit.commit.message.split('\n')[0]}`);
+
+        // Generate new character description
+        const evolutionResult = await generateImprovedCharacterDescription(
+          currentDesc,
+          currentLevel - 1
+        );
+
+        // Store evolution details
+        newEvolutions.push({
+          level: currentLevel,
+          commitSha: commit.sha,
+          commitMessage: commit.commit.message.split('\n')[0],
+          commitDate: commit.commit.author.date,
+          previousDescription: currentDesc,
+          prompt: evolutionResult.prompt,
+          newDescription: evolutionResult.description
+        });
+
+        currentDesc = evolutionResult.description;
+        console.log(`Evolution ${currentLevel}: ${currentDesc}`);
       }
+
+      // Generate the final character
+      await generateCharacter(currentDesc);
+
+      // Update history with new state
+      const updatedHistory = {
+        lastCheckedCommit: commits[0].sha,
+        lastCheckedDate: new Date().toISOString(),
+        currentCharacterDescription: currentDesc,
+        evolutionLevel: currentLevel,
+        totalCommits: currentLevel,
+        evolutionHistory: [...evolutionHistory, ...newEvolutions]
+      };
+
+      fs.writeFileSync(COMMIT_HISTORY_FILE, JSON.stringify(updatedHistory, null, 2));
+      copyCommitHistoryToAssets();
+
+      console.log(`Character evolved successfully to level ${currentLevel}`);
     } else {
-      console.log('No new commits found');
+      console.log('No new commits to process');
     }
   } catch (error) {
     console.error('Error in evolution check:', error);
