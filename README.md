@@ -235,4 +235,7 @@ For more details, see the [Character Evolution README](src/scripts/README_EVOLUT
 
 ## License
 
-This project is licensed under the ISC License. 
+This project is licensed under the ISC License.
+
+## Test Evolution
+Testing character evolution with this commit - [timestamp: ${new Date().toISOString()}] 
