@@ -5,10 +5,11 @@
   "main": "index.js",
   "scripts": {
     "prestart": "node copy-commit-history.js",
-    "start": "webpack serve --open",
+    "start": "node server.js",
+    "dev": "webpack serve --open",
     "build": "webpack --mode production",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy": "npm run build && butler push dist potnoodledev/manifesto:html5",
+    "deploy": "npm run build && butler push dist potnoodledev/evolve:html5",
     "fetch-comments": "node src/scripts/fetchComments.js",
     "fetch-comments-advanced": "node src/scripts/advancedCommentFetcher.js",
     "evolve-character": "node evolve-character.js",
@@ -30,6 +31,7 @@
     "axios": "^1.6.7",
     "cheerio": "^1.0.0-rc.12",
     "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "phaser": "^3.60.0"
   },
   "devDependencies": {
