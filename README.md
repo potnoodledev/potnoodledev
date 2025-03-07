@@ -124,6 +124,36 @@ npm run copy-history
 
 This project is licensed under the ISC License.
 
+## Automated Deployment to itch.io
+
+This project includes a GitHub workflow that automatically deploys the game to itch.io whenever you push to the main branch.
+
+### Setup Instructions
+
+1. **Get a Butler API Key**:
+   - Log in to [itch.io](https://itch.io)
+   - Go to [API keys](https://itch.io/user/settings/api-keys)
+   - Generate a new API key
+
+2. **Add the API Key to GitHub Secrets**:
+   - Go to your GitHub repository
+   - Navigate to Settings > Secrets and variables > Actions
+   - Click "New repository secret"
+   - Name: `BUTLER_API_KEY`
+   - Value: Your Butler API key
+   - Click "Add secret"
+
+3. **Verify itch.io Project Configuration**:
+   - The deployment uses the project name specified in the `deploy` script in `package.json`
+   - Current configuration: `butler push dist potnoodledev/manifesto:html5`
+   - Update the username/project-name if needed to match your itch.io account
+
+### How It Works
+
+- Every push to the `main` branch triggers the workflow
+- The workflow builds the game and deploys it to itch.io
+- You can also manually trigger the workflow from the Actions tab
+
 ## Contributing
 
 Feel free to submit issues and enhancement requests! 
