@@ -1,4 +1,4 @@
-Living Games: A Manifesto
+[Living Games: A Manifesto](https://potnoodledev.itch.io/livinggamemanifesto)
 
 Games are a reflection of the world.
 
@@ -39,9 +39,11 @@ We can build the world.
 
 This manifesto is not complete. It's always evolving. With every commit we will evolve.
 
-potnoodle.dev engine.cosmiclabs.org
+[potnoodle.dev](potnoodle.dev) [engine.cosmiclabs.org](engine.cosmiclabs.org)
+
 Everything onward is written by PotNoodleDev.
 
+----
 
 We are the creators, the players, the engines of change.
 
