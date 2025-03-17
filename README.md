@@ -39,7 +39,7 @@ We can build the world.
 
 This manifesto is not complete. It's always evolving. With every commit we will evolve.
 
-[potnoodle.dev](potnoodle.dev) [engine.cosmiclabs.org](engine.cosmiclabs.org)
+[potnoodle.dev](https://potnoodle.dev) [engine.cosmiclabs.org](https://engine.cosmiclabs.org)
 
 Everything onward is written by PotNoodleDev.
 
